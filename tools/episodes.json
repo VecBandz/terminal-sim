@@ -1,0 +1,242 @@
+{
+ "note": "One entry per video. module = 1-12 (training module the episode covers). setup = commands run silently on load so the sandbox matches where the video starts. try = first command shown in the video.",
+ "episodes": [
+  {
+   "id": "ep01",
+   "label": "EP 1",
+   "title": "Installation",
+   "module": 1,
+   "setup": [],
+   "try": "termux-info"
+  },
+  {
+   "id": "ep02",
+   "label": "EP 2",
+   "title": "Setup & Storage",
+   "module": 2,
+   "setup": [],
+   "try": "termux-setup-storage"
+  },
+  {
+   "id": "recap01",
+   "label": "Recap \u00b7 EP 1 & 2",
+   "title": "Installation + Setup",
+   "module": 2,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep03",
+   "label": "EP 3",
+   "title": "Package Management",
+   "module": 3,
+   "setup": [],
+   "try": "pkg update"
+  },
+  {
+   "id": "ep03p2",
+   "label": "EP 3 \u00b7 Part 2",
+   "title": "Package Management",
+   "module": 3,
+   "setup": [
+    "pkg update",
+    "pkg upgrade",
+    "pkg install tree"
+   ],
+   "try": "pkg show tree"
+  },
+  {
+   "id": "recap04",
+   "label": "Recap \u00b7 Packages 1 & 2",
+   "title": "Package Management",
+   "module": 3,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep04",
+   "label": "EP 4",
+   "title": "Files & Directories",
+   "module": 4,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep05",
+   "label": "EP 5",
+   "title": "Git & GitHub",
+   "module": 5,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep05b",
+   "label": "EP 5 \u00b7 Part 2",
+   "title": "Git & GitHub",
+   "module": 5,
+   "setup": [
+    "pkg install git",
+    "git config --global user.name \"Vec\"",
+    "git config --global user.email \"vec@example.com\"",
+    "mkdir -p ~/projects/demo && cd ~/projects/demo",
+    "git init",
+    "echo \"# demo\" > README.md",
+    "git add .",
+    "git commit -m \"first commit\"",
+    "echo \"more notes\" >> README.md"
+   ],
+   "try": "git diff"
+  },
+  {
+   "id": "recap02",
+   "label": "Recap \u00b7 Git 1 & 2",
+   "title": "Git & GitHub",
+   "module": 5,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep06",
+   "label": "EP 6",
+   "title": "Python",
+   "module": 6,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep07",
+   "label": "EP 7",
+   "title": "SSH & Networking",
+   "module": 7,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep07b",
+   "label": "EP 7 \u00b7 Part 2",
+   "title": "SSH & Networking",
+   "module": 7,
+   "setup": [
+    "pkg install openssh net-tools",
+    "ssh-keygen -t ed25519",
+    "cat ~/.ssh/id_ed25519.pub",
+    "passwd",
+    "sshd",
+    "ifconfig",
+    "ping -c 1 google.com"
+   ],
+   "try": "chmod 600 ~/.ssh/id_ed25519"
+  },
+  {
+   "id": "recap03",
+   "label": "Recap \u00b7 SSH 1 & 2",
+   "title": "SSH & Networking",
+   "module": 7,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep07c",
+   "label": "EP 7 \u00b7 Part 3",
+   "title": "SSH key login",
+   "module": 7,
+   "setup": [
+    "pkg install openssh net-tools",
+    "ssh-keygen -t ed25519",
+    "cat ~/.ssh/id_ed25519.pub",
+    "passwd",
+    "sshd",
+    "ifconfig",
+    "ping -c 1 google.com",
+    "chmod 600 ~/.ssh/id_ed25519"
+   ],
+   "try": "whoami"
+  },
+  {
+   "id": "ep07d",
+   "label": "EP 7 \u00b7 Part 4",
+   "title": "SSH shortcuts",
+   "module": 7,
+   "setup": [
+    "pkg install openssh net-tools",
+    "ssh-keygen -t ed25519",
+    "cat ~/.ssh/id_ed25519.pub",
+    "passwd",
+    "sshd",
+    "ifconfig",
+    "ping -c 1 google.com",
+    "chmod 600 ~/.ssh/id_ed25519",
+    "cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys",
+    "chmod 600 ~/.ssh/authorized_keys",
+    "ssh -p 8022 u0_a312@192.168.1.42"
+   ],
+   "try": ""
+  },
+  {
+   "id": "recap05",
+   "label": "Recap \u00b7 SSH 3 & 4",
+   "title": "SSH & Networking",
+   "module": 7,
+   "setup": [
+    "pkg install openssh net-tools",
+    "ssh-keygen -t ed25519",
+    "cat ~/.ssh/id_ed25519.pub",
+    "passwd",
+    "sshd",
+    "ifconfig",
+    "ping -c 1 google.com",
+    "chmod 600 ~/.ssh/id_ed25519"
+   ],
+   "try": ""
+  },
+  {
+   "id": "ep08",
+   "label": "EP 8",
+   "title": "System Monitoring",
+   "module": 8,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep09",
+   "label": "EP 9",
+   "title": "Development Tools",
+   "module": 9,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep10",
+   "label": "EP 10",
+   "title": "Ethical Security Tools",
+   "module": 10,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep11",
+   "label": "EP 11",
+   "title": "Customization",
+   "module": 11,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "ep12",
+   "label": "EP 12",
+   "title": "Pro Practices",
+   "module": 12,
+   "setup": [],
+   "try": ""
+  },
+  {
+   "id": "finale",
+   "label": "Finale",
+   "title": "Quiz",
+   "module": 12,
+   "view": "quiz",
+   "setup": [],
+   "try": ""
+  }
+ ]
+}

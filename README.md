@@ -27,3 +27,22 @@ Get it free on Gumroad: https://vecbandz.gumroad.com/l/termuxtrainer
 
 ---
 Terminal SIM is an independent learning simulator. It is not affiliated with or endorsed by the Termux project.
+
+## Every episode has its own version
+
+Each video in the series has a frozen copy of the SIM that opens on that episode's lesson,
+with the sandbox already set up where the video starts (Part 2+ episodes pick up after Part 1).
+
+- Episode list: https://vecbandz.github.io/terminal-sim/ep/
+- One episode: `https://vecbandz.github.io/terminal-sim/ep/ep07b/` (or `/?ep=ep07b`)
+- Offline file for one episode: `ep/ep07b/Terminal-SIM-EP07B.html`
+
+Episode IDs: ep01, ep02, recap01, ep03, ep03p2, recap04, ep04, ep05, ep05b, recap02, ep06,
+ep07, ep07b, recap03, ep07c, ep07d, recap05, ep08, ep09, ep10, ep11, ep12, finale.
+
+### Adding a new episode (maintainers)
+1. Add an entry to `tools/episodes.json` (id, label, title, module, setup commands, first command).
+2. Run `python3 tools/build_episodes.py`. Existing episode folders are never rebuilt, so older
+   videos keep the version they were recorded with. Rebuild one on purpose with
+   `python3 tools/build_episodes.py ep07b`.
+3. Commit and push.

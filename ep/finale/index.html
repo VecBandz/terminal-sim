@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>Terminal Trainer</title>
+<style>
+:root{
+  --bg:#0b0f14;--panel:#121923;--panel2:#18222f;--line:#243142;--text:#d7e0ea;--mute:#8497ab;
+  --accent:#3ddc84;--accent2:#5ac8fa;--warn:#ffb454;--bad:#ff6b6b;--term:#05080c;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.logo{font-family:var(--mono);font-weight:700;color:var(--accent);letter-spacing:.5px}
+.logo small{color:var(--mute);font-weight:400;margin-left:8px}
+nav{display:flex;gap:4px}
+nav button{background:none;border:0;color:var(--mute);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--panel2);color:var(--text)}
+nav button:hover{color:var(--text)}
+.spacer{flex:1}
+.prog{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.bar{width:140px;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+.ghost{background:none;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px}
+.ghost:hover{color:var(--text);border-color:var(--mute)}
+main{flex:1;min-height:0;display:flex}
+.view{display:none;flex:1;min-height:0}
+.view.on{display:flex}
+
+/* training */
+#side{width:250px;border-right:1px solid var(--line);overflow:auto;padding:10px;background:var(--panel);flex:none}
+.mod{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--text);padding:9px 10px;border-radius:10px;cursor:pointer;font:inherit}
+.mod:hover{background:var(--panel2)}
+.mod.on{background:var(--panel2);outline:1px solid var(--line)}
+.mod .n{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;border:1px solid var(--line);color:var(--mute);font-family:var(--mono)}
+.mod.done .n{background:var(--accent);color:#04210f;border-color:var(--accent)}
+.mod b{display:block;font-weight:600;font-size:14px}
+.mod span.s{display:block;font-size:12px;color:var(--mute)}
+#lesson{width:42%;min-width:320px;overflow:auto;padding:22px 24px;border-right:1px solid var(--line)}
+#lesson h2{margin:0 0 4px;font-size:22px}
+#lesson .sub{color:var(--mute);margin:0 0 16px}
+#lesson h3{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent2);margin:22px 0 8px}
+#lesson p{margin:0 0 12px}
+#lesson ul{padding-left:20px;margin:0 0 12px}
+#lesson li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:13px;background:var(--panel2);padding:1px 6px;border-radius:5px}
+code.cmd{cursor:pointer;color:var(--accent);border:1px solid transparent}
+code.cmd:hover{border-color:var(--accent)}
+pre.blk{background:var(--term);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font-family:var(--mono);font-size:13px;margin:0 0 12px;white-space:pre-wrap}
+pre.blk .cmd{cursor:pointer;display:block;color:var(--accent)}
+pre.blk .cmd:hover{background:var(--panel2)}
+.note{border-left:3px solid var(--warn);background:rgba(255,180,84,.08);padding:8px 12px;border-radius:0 8px 8px 0;margin:0 0 12px}
+.note.ok{border-color:var(--accent);background:rgba(61,220,132,.07)}
+.tasks{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:6px 12px;margin-top:18px}
+.task{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.task:last-child{border-bottom:0}
+.ck{flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--line);margin-top:2px;display:grid;place-items:center;font-size:13px;color:#04210f}
+.task.done .ck{background:var(--accent);border-color:var(--accent)}
+.task.done .tx{color:var(--mute);text-decoration:line-through}
+.hintb{margin-left:auto;flex:none;font-size:12px}
+.hint{display:none;font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:2px}
+.hint.show{display:block}
+.pager{display:flex;gap:8px;margin-top:18px}
+.btn{background:var(--accent);color:#04210f;border:0;padding:8px 16px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* terminal */
+#termwrap{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--term)}
+.tbar{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--mute)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+#term{flex:1;overflow:auto;padding:12px 14px;font-family:var(--mono);font-size:13.5px;line-height:1.45;cursor:text}
+#term .ln{white-space:pre-wrap;word-break:break-word;min-height:1.45em}
+#term .err{color:var(--bad)}
+#term .dim{color:var(--mute)}
+.cd{color:#6aa9ff;font-weight:700}.cx{color:var(--accent);font-weight:700}.cw{color:var(--warn)}.cg{color:var(--accent)}.cc{color:var(--accent2)}.cb{font-weight:700}.cr{color:var(--bad)}
+.prompt{color:var(--accent)}
+#inrow{display:flex;gap:8px;white-space:pre}
+#inp{flex:1;background:none;border:0;outline:0;color:var(--text);font:inherit;padding:0;min-width:0}
+.keys{display:flex;gap:6px;padding:6px 10px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.keys button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 11px;font:12px var(--mono);cursor:pointer}
+.keys button:hover{border-color:var(--accent)}
+
+/* editor */
+#ed{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:20;padding:16px}
+#ed.on{display:grid}
+#edbox{width:min(760px,100%);height:min(520px,90vh);background:var(--term);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+#edbox .h{padding:8px 14px;background:#e8e8e8;color:#111;font-family:var(--mono);font-size:13px;display:flex;justify-content:space-between}
+#edta{flex:1;background:var(--term);color:var(--text);border:0;outline:0;resize:none;padding:12px;font:13.5px/1.45 var(--mono);tab-size:4}
+#edbox .f{padding:8px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);background:var(--panel);font-family:var(--mono);font-size:12px;color:var(--mute)}
+#edmsg{margin-left:auto;color:var(--accent)}
+
+/* reference / quiz / generic page */
+.page{flex:1;overflow:auto;padding:24px;max-width:1000px;margin:0 auto;width:100%}
+.page h2{margin:0 0 4px}
+input.search{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;font:inherit;margin:12px 0 18px}
+.cat{margin-bottom:22px}
+.cat h3{margin:0 0 8px;color:var(--accent2);font-size:14px;text-transform:uppercase;letter-spacing:.08em}
+.row{display:grid;grid-template-columns:minmax(180px,34%) 1fr;gap:12px;padding:7px 10px;border-bottom:1px solid var(--line)}
+.row code{background:none;color:var(--accent);padding:0}
+.row span{color:var(--mute)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.opt{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;margin:8px 0;cursor:pointer;font:inherit}
+.opt:hover:not(:disabled){border-color:var(--accent2)}
+.opt.right{border-color:var(--accent);background:rgba(61,220,132,.12)}
+.opt.wrong{border-color:var(--bad);background:rgba(255,107,107,.12)}
+.expl{margin-top:10px;color:var(--mute)}
+.score{font-size:42px;font-weight:700;color:var(--accent)}
+
+@media (max-width:980px){
+  #side{display:none}
+  .view#v-train.on{flex-direction:column;overflow:auto}
+  #lesson{width:100%;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+  #termwrap{min-height:480px}
+  main{overflow:auto}
+}
+@media (max-width:620px){.row{grid-template-columns:1fr}.prog .bar{width:80px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">$ terminal-trainer<small>Linux CLI basics · training sim</small></div>
+  <nav id="nav">
+    <button data-v="train" class="on">Training</button>
+    <button data-v="ref">Reference</button>
+    <button data-v="quiz">Quiz</button>
+    <button data-v="about">About</button>
+  </nav>
+  <div class="spacer"></div>
+  <div class="prog"><span id="ptxt">0 / 0 tasks</span><div class="bar"><i id="pbar"></i></div></div>
+  <button class="ghost" id="reset">Reset progress</button>
+</header>
+<main>
+  <section class="view on" id="v-train">
+    <aside id="side"></aside>
+    <div id="lesson"></div>
+    <div id="termwrap">
+      <div class="tbar"><div class="dots"><i></i><i></i><i></i></div><span>Android-style terminal simulator — a safe sandbox, nothing here touches your real device</span><span class="spacer"></span><button class="ghost" id="rst-term">Reset sandbox</button></div>
+      <div id="term"></div>
+      <div class="keys" id="keys">
+        <button data-k="Escape">ESC</button><button data-k="Tab">TAB</button><button data-k="ctrl-c">CTRL+C</button><button data-k="ctrl-l">CTRL+L</button>
+        <button data-k="ArrowUp">↑</button><button data-k="ArrowDown">↓</button><button data-k="-">-</button><button data-k="/">/</button><button data-k="~">~</button><button data-k="|">|</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-ref"><div class="page" id="refpage"></div></section>
+  <section class="view" id="v-quiz"><div class="page" id="quizpage"></div></section>
+  <section class="view" id="v-about"><div class="page" id="aboutpage"></div></section>
+</main>
+
+<div id="ed"><div id="edbox">
+  <div class="h"><span>GNU nano 8.2</span><span id="edname"></span><span id="edmod"></span></div>
+  <textarea id="edta" spellcheck="false"></textarea>
+  <div class="f"><button class="ghost" id="edsave">^O Write Out</button><button class="ghost" id="edexit">^X Exit</button><span id="edmsg"></span></div>
+</div></div>
+
+<script>
+"use strict";
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const M=(c,t)=>'\u0001'+c+t+'\u0002';
+const strip=s=>s.replace(/\u0001.([^\u0002]*)\u0002/g,'$1');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const HOME='/data/data/com.termux/files/home', PREFIX='/data/data/com.termux/files/usr';
+const hex=n=>[...Array(n)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ================= package database ================= */
+const PKGS={
+ git:['2.47.1','Fast, scalable, distributed revision control system'],
+ python:['3.12.8','Python 3 programming language intended to enable clear programs'],
+ openssh:['9.9p1','Secure shell for logging into a remote machine'],
+ nodejs:['22.12.0','Open Source, cross-platform JavaScript runtime environment'],
+ clang:['19.1.6','C language family frontend for LLVM'],
+ make:['4.4.1','Tool to control the generation of non-source files from sources'],
+ cmake:['3.31.2','Family of tools designed to build, test and package software'],
+ nmap:['7.95','Utility for network discovery and security auditing'],
+ htop:['3.3.0','Interactive process viewer'],
+ neofetch:['7.1.0','Command-line system information tool'],
+ tree:['2.1.3','Recursive directory listing command'],
+ vim:['9.1.0900','Vi IMproved - enhanced vi editor'],
+ wget:['1.25.0','Network utility to retrieve files from the Web'],
+ zsh:['5.9','Shell with lots of features'],
+ tmux:['3.5a','Terminal multiplexer'],
+ figlet:['2.2.5','Make large letters out of ordinary text'],
+ cowsay:['3.8.4','Configurable talking cow'],
+ 'net-tools':['2.10','Configuration tools for Linux networking (ifconfig, netstat)'],
+ 'termux-api':['0.59.1','Termux API commands for Android hardware access'],
+ 'openssl-tool':['3.4.0','OpenSSL command line tool'],
+ proot:['5.1.107','Emulate chroot, bind mount and binfmt_misc for non-root users'],
+ 'proot-distro':['4.19.0','Termux utility for managing Linux distributions'],
+ ruby:['3.3.6','Dynamic programming language'],
+ golang:['1.23.4','Go programming language'],
+ rust:['1.83.0','Systems programming language'],
+ jq:['1.7.1','Command-line JSON processor'],
+ ffmpeg:['7.1','Tools and libraries to manipulate multimedia data'],
+ fastfetch:['2.31.0','Fast neofetch-like system information tool'],
+ zip:['3.0','Archiver for .zip files'],unzip:['6.0','Extractor for .zip files'],
+ curl:['8.11.1','Command line tool for transferring data with URL syntax'],
+ nano:['8.2','Small, free and friendly text editor'],
+ 'termux-tools':['1.45.0','Basic system tools for Termux'],
+ coreutils:['9.5','Basic file, shell and text manipulation utilities'],
+ grep:['3.11','Pattern matching utilities'],
+ bash:['5.2.37','GNU command shell'],
+};
+const CMD2PKG={git:'git',python:'python',python3:'python',pip:'python',ssh:'openssh','ssh-keygen':'openssh',sshd:'openssh',scp:'openssh',node:'nodejs',npm:'nodejs',clang:'clang',gcc:'clang',cc:'clang',make:'make',cmake:'cmake',nmap:'nmap',htop:'htop',neofetch:'neofetch',tree:'tree',vim:'vim',wget:'wget',zsh:'zsh',tmux:'tmux',figlet:'figlet',cowsay:'cowsay',ifconfig:'net-tools',netstat:'net-tools','termux-battery-status':'termux-api','termux-toast':'termux-api','termux-vibrate':'termux-api',jq:'jq',zip:'zip',unzip:'unzip',ruby:'ruby',go:'golang',cargo:'rust',openssl:'openssl-tool',fastfetch:'fastfetch'};
+const BASE_PKGS=['bash','coreutils','grep','nano','curl','termux-tools'];
+
+/* ================= sandbox state ================= */
+let S;
+function dir(c){return {t:'d',m:'rwx------',c:c||{}}}
+function file(d,m){return {t:'f',m:m||'rw-------',d:d||''}}
+function newState(){
+  const usr=dir({bin:dir(),etc:dir(),lib:dir(),share:dir()});
+  const files=dir({home:dir(),usr});
+  const fs=dir({data:dir({data:dir({'com.termux':dir({files})})}),sdcard:dir(),proc:dir(),system:dir()});
+  fs.m='rwxr-xr-x';
+  return {fs,cwd:HOME,pkgs:new Set(BASE_PKGS),env:{HOME,PREFIX,USER:'u0_a312',PATH:PREFIX+'/bin',SHELL:PREFIX+'/bin/bash',PWD:HOME,TERM:'xterm-256color',LANG:'en_US.UTF-8'},alias:{},hist:[],repos:{},gitcfg:{},storage:false,updated:false,sshd:false,passwd:false,started:Date.now()};
+}
+function resolve(p){
+  if(p==='~'||p.startsWith('~/'))p=HOME+p.slice(1);
+  if(!p.startsWith('/'))p=S.cwd+'/'+p;
+  const out=[];for(const s of p.split('/')){if(!s||s==='.')continue;if(s==='..')out.pop();else out.push(s)}
+  return '/'+out.join('/');
+}
+function getNode(abs){let n=S.fs;for(const s of abs.split('/').filter(Boolean)){if(n.t!=='d'||!n.c[s])return null;n=n.c[s]}return n}
+function split(abs){const i=abs.lastIndexOf('/');const dp=abs.slice(0,i)||'/';return {dp,dir:getNode(dp),name:abs.slice(i+1)}}
+function writeFile(abs,data,append){
+  const {dir:d,name}=split(abs);
+  if(!d||d.t!=='d')return 'No such file or directory';
+  const ex=d.c[name];
+  if(ex&&ex.t==='d')return 'Is a directory';
+  if(ex&&append)ex.d+=data;else if(ex)ex.d=data;else d.c[name]=file(data);
+  return null;
+}
+function walk(abs,fn,pre=''){const n=getNode(abs);if(!n||n.t!=='d')return;for(const k of Object.keys(n.c).sort()){fn(pre+k,n.c[k],abs+(abs==='/'?'':'/')+k);if(n.c[k].t==='d')walk(abs+(abs==='/'?'':'/')+k,fn,pre+k+'/')}}
+function tilde(p){return p===HOME?'~':p.startsWith(HOME+'/')?'~'+p.slice(HOME.length):p}
+function seedStorage(){
+  const st=dir({});
+  const sh=dir({Download:dir({'welcome.txt':file('Shared storage is now linked.\n','rw-r--r--'),'notes.md':file('# Notes\n- learn termux\n','rw-r--r--')}),DCIM:dir({}),Pictures:dir({}),Music:dir({}),Movies:dir({}),Documents:dir({})});
+  S.fs.c.sdcard=sh;
+  const home=getNode(HOME);
+  st.c.shared=sh;st.c.downloads=sh.c.Download;st.c.dcim=sh.c.DCIM;st.c.pictures=sh.c.Pictures;st.c.music=sh.c.Music;st.c.movies=sh.c.Movies;
+  home.c.storage=st;
+}
+
+/* ================= tokenizer / expansion ================= */
+function tokenize(line){
+  const toks=[];let cur='',has=false,sq=false,q=null;
+  const push=()=>{if(has){toks.push({v:cur,sq});cur='';has=false;sq=false}};
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(q){ if(ch===q){q=null}else cur+=ch; continue }
+    if(ch==='"'||ch==="'"){q=ch;has=true;if(ch==="'")sq=true;continue}
+    if(ch==='\\'&&i+1<line.length){cur+=line[++i];has=true;sq=true;continue}
+    if(/\s/.test(ch)){push();continue}
+    if(ch==='#'&&!has){break}
+    if(ch==='|'||ch===';'||ch==='>'||ch==='&'){
+      push();
+      let op=ch;
+      if(ch==='>'&&line[i+1]==='>'){op='>>';i++}
+      else if(ch==='|'&&line[i+1]==='|'){op='||';i++}
+      else if(ch==='&'&&line[i+1]==='&'){op='&&';i++}
+      else if(ch==='&'){continue}
+      toks.push({op});continue;
+    }
+    cur+=ch;has=true;
+  }
+  if(q)return {err:'unexpected EOF while looking for matching `'+q+"'"};
+  push();return {toks};
+}
+function expandVar(s){return s.replace(/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/g,(m,k)=>S.env[k]!==undefined?S.env[k]:'')}
+function glob(v){
+  if(!v.includes('*')&&!v.includes('?'))return [v];
+  const i=v.lastIndexOf('/');const dp=i>=0?v.slice(0,i+1):'';const pat=v.slice(i+1);
+  const d=getNode(resolve(dp||'.'));if(!d||d.t!=='d')return [v];
+  const re=new RegExp('^'+pat.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*').replace(/\?/g,'.')+'$');
+  const m=Object.keys(d.c).filter(k=>re.test(k)&&(k[0]!=='.'||pat[0]==='.')).sort().map(k=>dp+k);
+  return m.length?m:[v];
+}
+function expandTok(t){
+  if(t.op)return [t.v];
+  let v=t.v;
+  if(!t.sq){ if(v==='~'||v.startsWith('~/'))v=HOME+v.slice(1); v=expandVar(v); return glob(v) }
+  return [v];
+}
+
+/* ================= output ================= */
+const term=$('#term');
+function print(text,cls){
+  const d=document.createElement('div');d.className='ln'+(cls?' '+cls:'');
+  d.innerHTML=esc(text).replace(/\u0001(.)([^\u0002]*)\u0002/g,(m,c,t)=>`<span class="c${c}">${t}</span>`)||'&nbsp;';
+  term.insertBefore(d,$('#inrow'));term.scrollTop=term.scrollHeight;
+}
+function printHTML(html){const d=document.createElement('div');d.className='ln';d.innerHTML=html;term.insertBefore(d,$('#inrow'));term.scrollTop=term.scrollHeight}
+const slow=lines=>({__slow:lines});
+function prompt(){return tilde(S.cwd)+' $ '}
+function updatePrompt(){$('#pr').textContent=prompt()}
+
+/* ================= editor (nano) ================= */
+let edResolve=null,edPath=null,edDirty=false;
+function openEditor(abs,name){
+  return new Promise(res=>{
+    edResolve=res;edPath=abs;edDirty=false;
+    const n=getNode(abs);
+    $('#edta').value=n&&n.t==='f'?n.d:'';
+    $('#edname').textContent=name+(n?'':' (New File)');$('#edmod').textContent='';$('#edmsg').textContent='';
+    $('#ed').classList.add('on');setTimeout(()=>$('#edta').focus(),30);
+  });
+}
+function edSave(){
+  const r=writeFile(edPath,$('#edta').value,false);
+  $('#edmsg').textContent=r?('Error: '+r):('Wrote '+$('#edta').value.split('\n').length+' lines');
+  if(!r){edDirty=false;$('#edmod').textContent=''}
+}
+function edExit(){
+  if(edDirty&&!confirm('Save modified buffer?  OK = save, Cancel = discard'))edDirty=false;
+  else if(edDirty)edSave();
+  $('#ed').classList.remove('on');const r=edResolve;edResolve=null;r&&r('');setTimeout(()=>$('#inp').focus(),30);
+}
+$('#edta').addEventListener('input',()=>{edDirty=true;$('#edmod').textContent='Modified'});
+$('#edsave').onclick=edSave;$('#edexit').onclick=edExit;
+$('#edta').addEventListener('keydown',e=>{
+  if(e.ctrlKey&&(e.key==='o'||e.key==='s')){e.preventDefault();edSave()}
+  else if(e.ctrlKey&&e.key==='x'){e.preventDefault();edExit()}
+  else if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.setRangeText('    ',s,t.selectionEnd,'end');edDirty=true}
+});
+
+/* ================= mini interpreters (python / js / C output) ================= */
+function runScript(src,lang){
+  const out=[];const vars={};
+  const safe=/^[\w\s+\-*/().,%"'`{}\[\]<>=!&|:?]*$/;
+  const evalExpr=(ex)=>{
+    ex=ex.trim();
+    let m;
+    if(lang==='py'){
+      if((m=ex.match(/^f(["'])(.*)\1$/)))return m[2].replace(/\{([^}]+)\}/g,(_,e)=>evalExpr(e));
+      ex=ex.replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null').replace(/\*\*/g,'**').replace(/\/\//g,'/');
+      ex=ex.replace(/\blen\(([^)]*)\)/g,'($1).length').replace(/\bstr\(/g,'String(').replace(/\bint\(/g,'parseInt(');
+    }
+    if(!safe.test(ex))throw new Error('unsupported expression in simulator');
+    const f=new Function(...Object.keys(vars),'return ('+ex+')');
+    const r=f(...Object.values(vars));
+    return typeof r==='boolean'&&lang==='py'?(r?'True':'False'):r;
+  };
+  for(let raw of src.split('\n')){
+    const l=raw.trim();if(!l||l[0]==='#'||l.startsWith('//'))continue;
+    try{
+      let m;
+      if(lang==='py'&&(m=l.match(/^print\((.*)\)$/))){ out.push(m[1]===''?'':String(evalExpr(m[1]))); continue }
+      if(lang==='js'&&(m=l.match(/^console\.log\((.*)\);?$/))){ out.push(m[1]===''?'':String(evalExpr(m[1]))); continue }
+      if((m=l.match(/^(?:const |let |var )?([A-Za-z_]\w*)\s*=\s*(.+?);?$/))&&!/^(if|for|while)\b/.test(l)){ vars[m[1]]=evalExpr(m[2]); continue }
+    }catch(e){out.push((lang==='py'?'Traceback (most recent call last):\n  ':'')+'Error: '+e.message);break}
+  }
+  return out.join('\n');
+}
+function cOutput(src){
+  const out=[];const re=/printf\s*\(\s*"((?:[^"\\]|\\.)*)"/g;let m;
+  while((m=re.exec(src)))out.push(m[1].replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"'));
+  return out.join('').replace(/\n$/,'');
+}
+
+/* ================= git ================= */
+function findRepo(){let p=S.cwd;while(true){if(S.repos[p])return p;if(p==='/')return null;p=p.slice(0,p.lastIndexOf('/'))||'/'}}
+function snapshot(root){const o={};walk(root,(rel,n)=>{if(n.t==='f'&&!rel.startsWith('.git/'))o[rel]=n.d});return o}
+function gitStatus(root,r){
+  const work=snapshot(root),head=r.commits.length?r.commits[r.commits.length-1].files:{};
+  const index=Object.assign({},head,r.staged);
+  const lines=['On branch '+r.branch];
+  if(!r.commits.length)lines.push('','No commits yet');
+  const stg=Object.keys(r.staged).filter(k=>r.staged[k]!==head[k]);
+  const mod=Object.keys(index).filter(k=>k in work&&work[k]!==index[k]);
+  const del=Object.keys(index).filter(k=>!(k in work));
+  const unt=Object.keys(work).filter(k=>!(k in index));
+  if(stg.length){lines.push('','Changes to be committed:','  (use "git restore --staged <file>..." to unstage)');stg.forEach(k=>lines.push('\t'+M('g',(k in head?'modified:   ':'new file:   ')+k)))}
+  if(mod.length||del.length){lines.push('','Changes not staged for commit:','  (use "git add <file>..." to update what will be committed)');mod.forEach(k=>lines.push('\t'+M('r','modified:   '+k)));del.forEach(k=>lines.push('\t'+M('r','deleted:    '+k)))}
+  if(unt.length){lines.push('','Untracked files:','  (use "git add <file>..." to include in what will be committed)');unt.forEach(k=>lines.push('\t'+M('r',k)))}
+  if(!stg.length&&!mod.length&&!del.length)lines.push('',unt.length?'nothing added to commit but untracked files present (use "git add" to track)':(r.commits.length?'nothing to commit, working tree clean':'nothing to commit (create/copy files and use "git add" to track)'));
+  else if(!stg.length)lines.push('','no changes added to commit (use "git add" and/or "git commit -a")');
+  return lines.join('\n');
+}
+function git(a){
+  const sub=a[0];
+  if(!sub||sub==='--help'||sub==='help')return 'usage: git [-v | --version] [-C <path>] <command> [<args>]\n\ncommon commands: init clone config add status commit log branch checkout remote push pull diff';
+  if(sub==='--version'||sub==='version')return 'git version 2.47.1';
+  if(sub==='config'){
+    const rest=a.slice(1).filter(x=>x!=='--global');
+    if(rest[0]==='--list'||rest[0]==='-l')return Object.entries(S.gitcfg).map(([k,v])=>k+'='+v).join('\n');
+    if(rest.length===1)return S.gitcfg[rest[0]]||'';
+    if(rest.length>=2){S.gitcfg[rest[0]]=rest.slice(1).join(' ');return ''}
+    return 'usage: git config [<options>]';
+  }
+  if(sub==='init'){
+    const target=a[1]?resolve(a[1]):S.cwd;
+    if(a[1]){const r=mkdirp(target);if(r)return r}
+    const n=getNode(target);n.c['.git']=dir({HEAD:file('ref: refs/heads/master\n'),config:file('[core]\n\trepositoryformatversion = 0\n')});
+    S.repos[target]={branch:'master',commits:[],staged:{},remotes:{}};
+    return 'Initialized empty Git repository in '+target+'/.git/';
+  }
+  if(sub==='clone'){
+    if(!a[1])return 'fatal: You must specify a repository to clone.';
+    const nm=(a[2]||a[1].replace(/\/$/,'').split('/').pop().replace(/\.git$/,''));const t=resolve(nm);
+    if(getNode(t))return `fatal: destination path '${nm}' already exists and is not an empty directory.`;
+    mkdirp(t);const n=getNode(t);
+    n.c['README.md']=file('# '+nm+'\nCloned in the Termux training sim.\n','rw-r--r--');
+    n.c['.git']=dir({});
+    S.repos[t]={branch:'main',commits:[{id:hex(40),msg:'Initial commit',files:{'README.md':n.c['README.md'].d},t:Date.now()}],staged:{},remotes:{origin:a[1]}};
+    return slow([`Cloning into '${nm}'...`,'remote: Enumerating objects: 12, done.','remote: Counting objects: 100% (12/12), done.','Receiving objects: 100% (12/12), 4.20 KiB | 2.10 MiB/s, done.','Resolving deltas: 100% (3/3), done.']);
+  }
+  const root=findRepo();
+  if(!root)return 'fatal: not a git repository (or any of the parent directories): .git';
+  const r=S.repos[root];
+  if(sub==='status')return gitStatus(root,r);
+  if(sub==='add'){
+    if(!a[1])return 'Nothing specified, nothing added.\nhint: Maybe you wanted to say \'git add .\'?';
+    const work=snapshot(root);
+    for(const p of a.slice(1)){
+      if(p==='.'||p==='-A'||p==='--all'){Object.assign(r.staged,work);}
+      else{
+        const abs=resolve(p);const rel=abs===root?'':abs.slice(root.length+1);
+        const hit=Object.keys(work).filter(k=>k===rel||k.startsWith(rel+'/'));
+        if(!hit.length)return `fatal: pathspec '${p}' did not match any files`;
+        hit.forEach(k=>r.staged[k]=work[k]);
+      }
+    }
+    return '';
+  }
+  if(sub==='commit'){
+    const i=a.indexOf('-m');const all=a.includes('-am');
+    const mi=i>=0?i:a.indexOf('-am');
+    if(mi<0||!a[mi+1])return 'Aborting commit due to empty commit message. (use: git commit -m "message")';
+    if(!S.gitcfg['user.name']||!S.gitcfg['user.email'])return '*** Please tell me who you are.\n\nRun\n\n  git config --global user.email "you@example.com"\n  git config --global user.name "Your Name"\n\nto set your account\'s default identity.\nfatal: unable to auto-detect email address';
+    const head=r.commits.length?r.commits[r.commits.length-1].files:{};
+    if(all){const w=snapshot(root);Object.keys(head).forEach(k=>{if(k in w)r.staged[k]=w[k]})}
+    const stg=Object.keys(r.staged).filter(k=>r.staged[k]!==head[k]);
+    if(!stg.length)return gitStatus(root,r);
+    const files=Object.assign({},head,r.staged);
+    const id=hex(40);r.commits.push({id,msg:a[mi+1],files,t:Date.now()});r.staged={};
+    return `[${r.branch}${r.commits.length===1?' (root-commit)':''} ${id.slice(0,7)}] ${a[mi+1]}\n ${stg.length} file${stg.length>1?'s':''} changed`;
+  }
+  if(sub==='log'){
+    if(!r.commits.length)return `fatal: your current branch '${r.branch}' does not have any commits yet`;
+    const one=a.includes('--oneline');
+    return r.commits.slice().reverse().map(c=>one?M('w',c.id.slice(0,7))+' '+c.msg:M('w','commit '+c.id)+`\nAuthor: ${S.gitcfg['user.name']||'?'} <${S.gitcfg['user.email']||'?'}>\nDate:   ${new Date(c.t).toString().slice(0,24)}\n\n    ${c.msg}\n`).join(one?'\n':'\n');
+  }
+  if(sub==='branch'){
+    if(a[1]&&a[1][0]!=='-'){return ''}
+    return '* '+M('g',r.branch);
+  }
+  if(sub==='checkout'||sub==='switch'){
+    if(a[1]==='-b'||a[1]==='-c'){if(!a[2])return 'fatal: missing branch name';r.branch=a[2];return `Switched to a new branch '${a[2]}'`}
+    return `Already on '${r.branch}'`;
+  }
+  if(sub==='remote'){
+    if(a[1]==='add'){if(!a[3])return 'usage: git remote add <name> <url>';r.remotes[a[2]]=a[3];return ''}
+    if(a[1]==='-v')return Object.entries(r.remotes).map(([k,v])=>`${k}\t${v} (fetch)\n${k}\t${v} (push)`).join('\n');
+    return Object.keys(r.remotes).join('\n');
+  }
+  if(sub==='push'){
+    if(!Object.keys(r.remotes).length)return `fatal: No configured push destination.\nEither specify the URL from the command-line or configure a remote repository using\n\n    git remote add <name> <url>`;
+    return slow(['Enumerating objects: 3, done.','Counting objects: 100% (3/3), done.','Writing objects: 100% (3/3), 245 bytes | 245.00 KiB/s, done.','To '+Object.values(r.remotes)[0],' * [new branch]      '+r.branch+' -> '+r.branch,M('w','(simulated — real pushes need a GitHub token or SSH key; see Module 7)')]);
+  }
+  if(sub==='pull'||sub==='fetch')return 'Already up to date.';
+  if(sub==='diff'){
+    const head=r.commits.length?r.commits[r.commits.length-1].files:{};const w=snapshot(root);const o=[];
+    Object.keys(w).filter(k=>k in head&&head[k]!==w[k]).forEach(k=>{o.push(M('w','diff --git a/'+k+' b/'+k));head[k].split('\n').forEach(l=>o.push(M('r','-'+l)));w[k].split('\n').forEach(l=>o.push(M('g','+'+l)))});
+    return o.join('\n');
+  }
+  return `git: '${sub}' is not a git command in this simulator. See 'git --help'.`;
+}
+function mkdirp(abs){
+  let n=S.fs;for(const s of abs.split('/').filter(Boolean)){ if(!n.c[s])n.c[s]=dir({}); else if(n.c[s].t!=='d')return 'File exists'; n=n.c[s]}
+  return null;
+}
+
+/* ================= pkg / apt ================= */
+function pkgCmd(name,a){
+  const flags=a.filter(x=>x[0]==='-'),args=a.filter(x=>x[0]!=='-');
+  const sub=args[0],rest=args.slice(1);
+  if(!sub||sub==='help'||sub==='--help')return `Usage: ${name} command [arguments]\n\nCommands:\n  update / upgrade / install <pkg> / remove <pkg> / search <query>\n  list-installed / list-all / show <pkg> / autoclean / files <pkg>`;
+  if(sub==='update'){S.updated=true;return slow(['Hit:1 https://packages.termux.dev/apt/termux-main stable InRelease','Get:2 https://packages.termux.dev/apt/termux-main stable/main aarch64 Packages [546 kB]','Fetched 546 kB in 2s (301 kB/s)','Reading package lists... Done','Building dependency tree... Done','All packages are up to date.']);}
+  if(sub==='upgrade'||sub==='full-upgrade'){S.updated=true;return slow(['Reading package lists... Done','Building dependency tree... Done','Calculating upgrade... Done','The following packages will be upgraded:','  apt bash coreutils curl libandroid-support openssl termux-tools','7 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.','Need to get 8,240 kB of archives.','Get:1 https://packages.termux.dev/apt/termux-main stable/main aarch64 openssl aarch64 3.4.0 [1,980 kB]','Get:2 https://packages.termux.dev/apt/termux-main stable/main aarch64 curl aarch64 8.11.1 [310 kB]','Unpacking openssl (3.4.0) over (3.3.2) ...','Unpacking curl (8.11.1) over (8.10.1) ...','Setting up openssl (3.4.0) ...','Setting up curl (8.11.1) ...',M('g','Done — system up to date.')]);}
+  if(sub==='install'||sub==='add'){
+    if(!rest.length)return 'E: No packages specified';
+    const lines=['Reading package lists... Done','Building dependency tree... Done'];const nw=[];
+    for(const p of rest){
+      if(!PKGS[p])return `E: Unable to locate package ${p}`;
+      if(S.pkgs.has(p)){lines.push(`${p} is already the newest version (${PKGS[p][0]}).`);continue}
+      nw.push(p);
+    }
+    if(nw.length){
+      lines.push('The following NEW packages will be installed:','  '+nw.join(' '));
+      lines.push(`0 upgraded, ${nw.length} newly installed, 0 to remove and 0 not upgraded.`,`Need to get ${(nw.length*3.7).toFixed(1)} MB of archives.`);
+      nw.forEach((p,i)=>lines.push(`Get:${i+1} https://packages.termux.dev/apt/termux-main stable/main aarch64 ${p} aarch64 ${PKGS[p][0]} [${(2+i*1.3).toFixed(1)} MB]`));
+      nw.forEach(p=>lines.push(`Unpacking ${p} (${PKGS[p][0]}) ...`));
+      nw.forEach(p=>{lines.push(`Setting up ${p} (${PKGS[p][0]}) ...`);S.pkgs.add(p)});
+      if(nw.includes('python'))S.pkgs.add('pip');
+    }
+    return slow(lines);
+  }
+  if(sub==='uninstall'||sub==='remove'||sub==='purge'){
+    if(!rest.length)return 'E: No packages specified';
+    const lines=[];for(const p of rest){ if(!S.pkgs.has(p)){lines.push(`Package '${p}' is not installed, so not removed`);continue} if(BASE_PKGS.includes(p)&&p!=='nano'){lines.push(`E: Refusing to remove essential package ${p}`);continue} S.pkgs.delete(p);lines.push(`Removing ${p} (${PKGS[p]?PKGS[p][0]:''}) ...`)}
+    return slow(lines);
+  }
+  if(sub==='search'||sub==='find'){
+    const q=(rest[0]||'').toLowerCase();if(!q)return 'E: search needs a keyword';
+    const hits=Object.keys(PKGS).filter(k=>k.includes(q)||PKGS[k][1].toLowerCase().includes(q));
+    if(!hits.length)return 'Sorting... Done\nFull Text Search... Done';
+    return 'Sorting... Done\nFull Text Search... Done\n'+hits.map(k=>M('g',k)+'/stable '+PKGS[k][0]+' aarch64'+(S.pkgs.has(k)?' [installed]':'')+'\n  '+PKGS[k][1]+'\n').join('\n');
+  }
+  if(sub==='list-installed')return 'Listing... Done\n'+[...S.pkgs].sort().map(k=>M('g',k)+'/stable,now '+(PKGS[k]?PKGS[k][0]:'1.0')+' aarch64 [installed]').join('\n');
+  if(sub==='list-all')return 'Listing... Done\n'+Object.keys(PKGS).sort().map(k=>M('g',k)+'/stable '+PKGS[k][0]+' aarch64'+(S.pkgs.has(k)?' [installed]':'')).join('\n');
+  if(sub==='show'||sub==='info'){const p=rest[0];if(!PKGS[p])return `N: Unable to locate package ${p}`;return `Package: ${p}\nVersion: ${PKGS[p][0]}\nArchitecture: aarch64\nHomepage: https://packages.termux.dev\nDescription: ${PKGS[p][1]}`}
+  if(sub==='autoclean'||sub==='clean')return 'Reading package lists... Done\n(cache cleaned)';
+  if(sub==='files'){const p=rest[0];if(!S.pkgs.has(p))return `${p} is not installed`;return PREFIX+'/bin/'+p+'\n'+PREFIX+'/share/doc/'+p+'/copyright'}
+  return `E: Invalid operation ${sub}`;
+}
+
+/* ================= fake system info ================= */
+const fmtMode=n=>(n.t==='d'?'d':'-')+n.m;
+function neofetch(){
+  return M('g',`       -o          o-
+        +hd+      +dh+
+       -dhhhh/  /hhhhd-          `)+M('cb','u0_a312')+'@'+M('cb','localhost')+M('g',`
+      /hhhhhhhhhhhhhhhh/         `)+`--------------
+`+M('g',`     :hhhhhhhhhhhhhhhhhh:        `)+M('cb','OS')+`: Android 14 aarch64
+`+M('g',`    .hhhhhhhhhhhhhhhhhhhh.       `)+M('cb','Host')+`: Pixel 8
+`+M('g',`    -hhhhh  hhhhhh  hhhhh-       `)+M('cb','Kernel')+`: 6.1.99-android14
+`+M('g',`    -hhhhhhhhhhhhhhhhhhhh-       `)+M('cb','Uptime')+`: 2 days, 4 hours
+`+M('g',`    -hhhhhhhhhhhhhhhhhhhh-       `)+M('cb','Packages')+`: ${S.pkgs.size} (dpkg)
+`+M('g',`     .hhhhhhhhhhhhhhhhhh.       `)+M('cb','Shell')+`: bash 5.2.37
+`+M('g',`       -hhhhhhhhhhhhhh-         `)+M('cb','Terminal')+`: Termux
+`+M('g',`         `)+M('cb','CPU')+`: Tensor G3 (9) @ 2.91GHz
+                                 `+M('cb','Memory')+`: 3412MiB / 7712MiB`;
+}
+function topOut(){
+  const t=Math.floor((Date.now()-S.started)/1000);
+  return `top - ${new Date().toTimeString().slice(0,8)} up 2 days,  load average: 1.12, 0.98, 0.84
+Tasks:  14 total,   1 running,  13 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  7.3 us,  2.1 sy,  0.0 ni, 90.2 id
+Mem:   7712M total,  4300M free,  3412M used
+${M('cb','  PID USER         %CPU %MEM     TIME+ COMMAND')}
+ 2841 u0_a312      3.1  0.4   0:0${t%10}.12 top
+ 2790 u0_a312      0.3  0.2   0:00.41 bash
+ 2712 u0_a312      0.0  0.1   0:00.02 login
+${S.sshd?' 2903 u0_a312      0.0  0.1   0:00.08 sshd\n':''}${M('w','(snapshot — in real Termux, top refreshes live; press q to quit)')}`;
+}
+function htopOut(){
+  const bar=(p,w=30)=>{const f=Math.round(w*p/100);return '['+M('g','|'.repeat(f))+' '.repeat(w-f)+` ${p}%]`};
+  return `  1 ${bar(12)}   5 ${bar(4)}\n  2 ${bar(31)}   6 ${bar(2)}\n  3 ${bar(8)}   7 ${bar(1)}\n  4 ${bar(5)}   8 ${bar(0)}\n  Mem${bar(44)} 3.33G/7.53G\n  Swp${bar(0)} 0K/0K\n\n`+M('cb','  PID USER      PRI  NI  VIRT   RES  CPU% MEM%  TIME+  Command')+`\n 2790 u0_a312    20   0 8212 3304   0.3  0.1  0:00.41 -bash\n 2841 u0_a312    20   0 9120 3908   3.1  0.2  0:00.12 htop\n`+M('w','(snapshot — press F10 / q to quit on a real device)');
+}
+function nmapOut(a){
+  const tgt=a.filter(x=>x[0]!=='-')[0];
+  if(a.includes('--help')||a.includes('-h')||!tgt)return 'Nmap 7.95 ( https://nmap.org )\nUsage: nmap [Scan Type(s)] [Options] {target specification}\n  -sV  probe open ports for service/version info\n  -p   only scan specified ports\n  -F   fast scan\nNOTE: Only scan hosts you own or have written permission to test.';
+  const local=/^(localhost|127\.0\.0\.1)$/.test(tgt),lan=/^192\.168\.\d+\.\d+$/.test(tgt);
+  if(!local&&!lan)return M('r','[sim] Refused: this training sim only "scans" localhost or your own LAN (192.168.x.x).')+'\nScanning systems you do not own or lack written permission for can be illegal.\nPractice on your own device, home lab, or purpose-built targets like scanme.nmap.org (per its rules).';
+  const sv=a.includes('-sV');
+  return `Starting Nmap 7.95 ( https://nmap.org ) at ${new Date().toISOString().slice(0,16).replace('T',' ')}\nNmap scan report for ${tgt}${local?' (127.0.0.1)':''}\nHost is up (0.00012s latency).\n`+(S.sshd?`Not shown: 999 closed tcp ports (conn-refused)\nPORT     STATE SERVICE${sv?' VERSION':''}\n8022/tcp open  ssh${sv?'     OpenSSH 9.9 (protocol 2.0)':''}\n`:`All 1000 scanned ports on ${tgt} are in ignored states.\nNot shown: 1000 closed tcp ports (conn-refused)\n`)+`\nNmap done: 1 IP address (1 host up) scanned in 0.09 seconds`+(S.sshd?'':'\n'+M('w','Tip: start the SSH server with `sshd` and scan again.'));
+}
+
+/* ================= commands ================= */
+const HELP=`Commands available in this sandbox:
+  files   : ls cd pwd mkdir rmdir touch cat cp mv rm head tail wc grep find tree sort chmod tar nano vim
+  text    : echo export alias source history clear date sleep which env
+  system  : whoami uname uptime free df top htop ps neofetch termux-info
+  package : pkg apt (update upgrade install remove search list-installed show)
+  dev     : git python pip node npm clang gcc make ./program
+  network : ip ifconfig ping curl wget ssh ssh-keygen sshd passwd nmap
+  termux  : termux-setup-storage termux-reload-settings termux-change-repo termux-wake-lock termux-battery-status
+Tip: click any green command in the lesson to paste it into the terminal.`;
+
+const C={
+ help:()=>HELP,
+ clear:()=>{[...term.querySelectorAll('.ln')].forEach(x=>x.remove());return ''},
+ pwd:()=>S.cwd,
+ whoami:()=>S.env.USER,
+ echo:a=>{let nl=true,e=false;while(a[0]&&/^-[neE]+$/.test(a[0])){if(a[0].includes('n'))nl=false;if(a[0].includes('e'))e=true;a=a.slice(1)}let s=a.join(' ');if(e)s=s.replace(/\\n/g,'\n').replace(/\\t/g,'\t');return s+(nl?'':'\u0000')},
+ date:()=>new Date().toString().replace(/ GMT.*/,'')+' UTC',
+ uname:a=>a.includes('-a')?'Linux localhost 6.1.99-android14-11 #1 SMP PREEMPT Wed Oct 1 00:00:00 UTC 2025 aarch64 Android':a.includes('-m')?'aarch64':a.includes('-r')?'6.1.99-android14-11':'Linux',
+ uptime:()=>` ${new Date().toTimeString().slice(0,8)} up 2 days,  4:12,  0 users,  load average: 1.12, 0.98, 0.84`,
+ free:a=>{const h=a.includes('-h');return h?`               total        used        free      shared  buff/cache   available\nMem:           7.5Gi       3.3Gi       1.2Gi        48Mi       3.0Gi       4.2Gi\nSwap:             0B          0B          0B`:`               total        used        free      shared  buff/cache   available\nMem:         7897088     3489792     1257472       49152     3149824     4407296\nSwap:              0           0           0`},
+ df:a=>{const h=a.includes('-h');return h?`Filesystem      Size  Used Avail Use% Mounted on\n/dev/block/dm-9 110G   46G   64G  42% ${PREFIX.replace('/usr','')}\n/dev/fuse       110G   46G   64G  42% /storage/emulated`:`Filesystem     1K-blocks     Used Available Use% Mounted on\n/dev/block/dm-9 115343360 48234496  67108864  42% /data`},
+ ps:()=>`  PID TTY          TIME CMD\n 2790 pts/0    00:00:00 bash\n${S.sshd?' 2903 ?        00:00:00 sshd\n':''} 2850 pts/0    00:00:00 ps`,
+ top:()=>topOut(),
+ htop:()=>htopOut(),
+ neofetch:()=>neofetch(),
+ fastfetch:()=>neofetch(),
+ 'termux-info':()=>`Termux Variables:\nTERMUX_APK_RELEASE=F_DROID\nTERMUX_VERSION=0.118.3\nTERMUX_APP_PACKAGE_MANAGER=apt\nPackages CPU architecture:\naarch64\nUpdatable packages:\nnone\nSubscribed repositories:\n# sources.list\ndeb https://packages.termux.dev/apt/termux-main stable main\nUpdatable packages:\nAndroid version: 14\nDevice manufacturer: Google\nDevice model: Pixel 8`,
+ 'termux-setup-storage':()=>{if(S.storage)return 'Storage already set up.';S.storage=true;seedStorage();return slow([M('w','[Android would now show a permission prompt — tap "Allow"]'),'Created ~/storage with links: shared, downloads, dcim, pictures, music, movies']);},
+ 'termux-reload-settings':()=>'',
+ 'termux-change-repo':()=>'(opens a menu to pick a mirror — "Single mirror" then choose one near you, e.g. Grimler or BFSU)',
+ 'termux-wake-lock':()=>'Acquiring wakelock: Termux will keep the CPU awake (see notification).',
+ 'termux-wake-unlock':()=>'Wakelock released.',
+ 'termux-battery-status':()=>'{\n  "health": "GOOD",\n  "percentage": 87,\n  "plugged": "UNPLUGGED",\n  "status": "DISCHARGING",\n  "temperature": 29.4\n}',
+ 'termux-toast':a=>M('w','[a toast notification would appear on your phone: '+a.join(' ')+']'),
+ 'termux-vibrate':()=>M('w','[bzzzt]'),
+ which:a=>{const n=a[0];if(!n)return '';if(C[n]&&(!CMD2PKG[n]||S.pkgs.has(CMD2PKG[n])))return PREFIX+'/bin/'+n;return ''},
+ env:()=>Object.entries(S.env).map(([k,v])=>k+'='+v).join('\n'),
+ export:a=>{a.forEach(x=>{const i=x.indexOf('=');if(i>0)S.env[x.slice(0,i)]=x.slice(i+1)});return ''},
+ alias:a=>{if(!a.length)return Object.entries(S.alias).map(([k,v])=>`alias ${k}='${v}'`).join('\n');a.forEach(x=>{const i=x.indexOf('=');if(i>0)S.alias[x.slice(0,i)]=x.slice(i+1)});return ''},
+ source:a=>{
+  const n=getNode(resolve(a[0]||''));if(!n||n.t!=='f')return `bash: ${a[0]}: No such file or directory`;
+  n.d.split('\n').forEach(l=>{l=l.trim();let m;
+    if((m=l.match(/^alias\s+([\w.-]+)=(["']?)(.*)\2$/)))S.alias[m[1]]=m[3];
+    else if((m=l.match(/^export\s+(\w+)=(["']?)(.*)\2$/)))S.env[m[1]]=expandVar(m[3]);});
+  return ''},
+ history:()=>S.hist.map((h,i)=>String(i+1).padStart(5)+'  '+h).join('\n'),
+ sleep:async a=>{await sleep(Math.min(parseFloat(a[0]||0),3)*300);return ''},
+ exit:()=>M('w','(This sandbox keeps running — in real Termux this closes the session.)'),
+ ls:a=>{
+  let fl='';const ps=[];a.forEach(x=>{if(x[0]==='-'&&x.length>1)fl+=x.slice(1);else ps.push(x)});if(!ps.length)ps.push('.');
+  const out=[];
+  const nm=(k,n)=>n.t==='d'?M('d',k):(n.x||n.m.includes('x'))?M('x',k):k;
+  const lg=(k,n)=>`${fmtMode(n)} 1 ${S.env.USER} ${S.env.USER} ${String(n.t==='f'?n.d.length:4096).padStart(5)} Oct 26 10:00 ${nm(k,n)}`;
+  ps.forEach(p=>{
+    const n=getNode(resolve(p));
+    if(!n){out.push(`ls: cannot access '${p}': No such file or directory`);return}
+    if(n.t==='f'){out.push(fl.includes('l')?lg(p,n):nm(p,n));return}
+    if(ps.length>1)out.push(p+':');
+    let names=Object.keys(n.c).sort();if(!fl.includes('a'))names=names.filter(x=>x[0]!=='.');
+    if(fl.includes('a'))names=['.','..',...names];
+    if(fl.includes('l')){out.push('total '+names.length*4);names.forEach(k=>out.push(lg(k,n.c[k]||n)))}
+    else if(names.length)out.push(names.map(k=>nm(k,n.c[k]||n)).join(S.piping?'\n':'  '));
+  });
+  return out.join('\n')},
+ cd:a=>{const t=a[0]===undefined?HOME:a[0]==='-'?(S.oldpwd||HOME):a[0];const abs=resolve(t);const n=getNode(abs);if(!n)return `bash: cd: ${t}: No such file or directory`;if(n.t!=='d')return `bash: cd: ${t}: Not a directory`;S.oldpwd=S.cwd;S.cwd=abs;S.env.PWD=abs;updatePrompt();return ''},
+ mkdir:a=>{const p=a.includes('-p');const out=[];a.filter(x=>x[0]!=='-').forEach(x=>{const abs=resolve(x);if(getNode(abs)){if(!p)out.push(`mkdir: cannot create directory '${x}': File exists`);return}
+   if(p){const r=mkdirp(abs);if(r)out.push(`mkdir: cannot create directory '${x}': ${r}`);return}
+   const {dir:d,name}=split(abs);if(!d||d.t!=='d')out.push(`mkdir: cannot create directory '${x}': No such file or directory (use -p to create parents)`);else d.c[name]=dir({})});
+   if(!a.filter(x=>x[0]!=='-').length)return 'mkdir: missing operand';return out.join('\n')},
+ rmdir:a=>a.map(x=>{const n=getNode(resolve(x));if(!n)return `rmdir: failed to remove '${x}': No such file or directory`;if(n.t!=='d')return `rmdir: failed to remove '${x}': Not a directory`;if(Object.keys(n.c).length)return `rmdir: failed to remove '${x}': Directory not empty`;const {dir:d,name}=split(resolve(x));delete d.c[name];return ''}).filter(Boolean).join('\n'),
+ touch:a=>{if(!a.length)return 'touch: missing file operand';return a.map(x=>{const abs=resolve(x);if(getNode(abs))return '';const {dir:d,name}=split(abs);if(!d||d.t!=='d')return `touch: cannot touch '${x}': No such file or directory`;d.c[name]=file('');return ''}).filter(Boolean).join('\n')},
+ cat:(a,inp)=>{if(!a.length)return inp||'';return a.map(x=>{const n=getNode(resolve(x));if(!n)return `cat: ${x}: No such file or directory`;if(n.t==='d')return `cat: ${x}: Is a directory`;return n.d.replace(/\n$/,'')}).join('\n')},
+ head:(a,inp)=>{let n=10;const fs=[];for(let i=0;i<a.length;i++){if(a[i]==='-n')n=+a[++i];else if(/^-\d+$/.test(a[i]))n=-a[i];else fs.push(a[i])}const t=fs.length?(getNode(resolve(fs[0]))||{}).d:inp;if(t===undefined)return `head: cannot open '${fs[0]}' for reading: No such file or directory`;return t.split('\n').slice(0,n).join('\n')},
+ tail:(a,inp)=>{let n=10;const fs=[];for(let i=0;i<a.length;i++){if(a[i]==='-n')n=+a[++i];else if(/^-\d+$/.test(a[i]))n=-a[i];else fs.push(a[i])}const t=fs.length?(getNode(resolve(fs[0]))||{}).d:inp;if(t===undefined)return `tail: cannot open '${fs[0]}' for reading: No such file or directory`;return t.replace(/\n$/,'').split('\n').slice(-n).join('\n')},
+ wc:(a,inp)=>{const fl=a.filter(x=>x[0]==='-').join('');const fs=a.filter(x=>x[0]!=='-');const t=fs.length?(getNode(resolve(fs[0]))||{}).d:inp;if(t===undefined)return `wc: ${fs[0]}: No such file or directory`;const l=(t.match(/\n/g)||[]).length+(t&&!t.endsWith('\n')?1:0),w=t.split(/\s+/).filter(Boolean).length,c=t.length;const r=fl.includes('l')?[l]:fl.includes('w')?[w]:fl.includes('c')?[c]:[l,w,c];return r.join(' ')+(fs.length?' '+fs[0]:'')},
+ sort:(a,inp)=>{const fs=a.filter(x=>x[0]!=='-');const t=fs.length?(getNode(resolve(fs[0]))||{d:''}).d:inp;const l=t.replace(/\n$/,'').split('\n').sort();if(a.includes('-r'))l.reverse();return l.join('\n')},
+ grep:(a,inp)=>{
+  const fl=a.filter(x=>x[0]==='-').join('');const ar=a.filter(x=>x[0]!=='-');const pat=ar[0];if(pat===undefined)return 'Usage: grep [OPTION]... PATTERNS [FILE]...';
+  let re;try{re=new RegExp(pat,fl.includes('i')?'i':'')}catch(e){return 'grep: invalid pattern'}
+  const srcs=[];
+  if(ar.length>1){ar.slice(1).forEach(f=>{const abs=resolve(f);const n=getNode(abs);if(!n)srcs.push({e:`grep: ${f}: No such file or directory`});else if(n.t==='f')srcs.push({n:f,d:n.d});else if(fl.includes('r'))walk(abs,(rel,nn)=>{if(nn.t==='f')srcs.push({n:f+'/'+rel,d:nn.d})});else srcs.push({e:`grep: ${f}: Is a directory`})})}
+  else if(fl.includes('r')){walk(S.cwd,(rel,nn)=>{if(nn.t==='f')srcs.push({n:rel,d:nn.d})})}
+  else srcs.push({n:'',d:inp||''});
+  const multi=srcs.length>1||fl.includes('r');const out=[];
+  srcs.forEach(s=>{if(s.e){out.push(s.e);return}s.d.replace(/\n$/,'').split('\n').forEach((l,i)=>{if(re.test(l)){out.push((multi?s.n+':':'')+(fl.includes('n')?(i+1)+':':'')+l.replace(new RegExp(pat,'g'+(fl.includes('i')?'i':'')),m=>'\u0001r'+m+'\u0002'))}})});
+  return out.join('\n')},
+ find:a=>{const start=a[0]&&a[0][0]!=='-'?a[0]:'.';const ni=a.indexOf('-name');const pat=ni>=0?a[ni+1]:null;const ti=a.indexOf('-type');const ty=ti>=0?a[ti+1]:null;
+  const re=pat?new RegExp('^'+pat.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*').replace(/\?/g,'.')+'$'):null;const abs=resolve(start);if(!getNode(abs))return `find: '${start}': No such file or directory`;
+  const out=[];const base=start.replace(/\/$/,'');if(!re&&!ty)out.push(base);
+  walk(abs,(rel,n)=>{const nm=rel.split('/').pop();if((!re||re.test(nm))&&(!ty||(ty==='f'&&n.t==='f')||(ty==='d'&&n.t==='d')))out.push(base+'/'+rel)});return out.join('\n')},
+ tree:a=>{const abs=resolve(a.find(x=>x[0]!=='-')||'.');const root=getNode(abs);if(!root)return 'tree: no such directory';let nd=0,nf=0;const out=[M('d',a.find(x=>x[0]!=='-')||'.')];
+  const rec=(n,pre)=>{const ks=Object.keys(n.c).filter(k=>k[0]!=='.').sort();ks.forEach((k,i)=>{const last=i===ks.length-1,c=n.c[k];out.push(pre+(last?'└── ':'├── ')+(c.t==='d'?M('d',k):k));if(c.t==='d'){nd++;rec(c,pre+(last?'    ':'│   '))}else nf++})};rec(root,'');out.push(`\n${nd} directories, ${nf} files`);return out.join('\n')},
+ cp:a=>{const r=a.includes('-r')||a.includes('-R')||a.includes('-a');const ar=a.filter(x=>x[0]!=='-');if(ar.length<2)return 'cp: missing destination file operand';
+  const dst=resolve(ar[ar.length-1]);const dn=getNode(dst);const out=[];
+  ar.slice(0,-1).forEach(s=>{const sn=getNode(resolve(s));if(!sn){out.push(`cp: cannot stat '${s}': No such file or directory`);return}
+   if(sn.t==='d'&&!r){out.push(`cp: -r not specified; omitting directory '${s}'`);return}
+   const clone=JSON.parse(JSON.stringify(sn));let target=dst;if(dn&&dn.t==='d')target=dst+'/'+s.replace(/\/$/,'').split('/').pop();
+   const {dir:d,name}=split(target);if(!d){out.push(`cp: cannot create '${ar[ar.length-1]}': No such file or directory`);return}d.c[name]=clone});return out.join('\n')},
+ mv:a=>{const ar=a.filter(x=>x[0]!=='-');if(ar.length<2)return 'mv: missing destination file operand';const dst=resolve(ar[ar.length-1]);const dn=getNode(dst);const out=[];
+  ar.slice(0,-1).forEach(s=>{const sa=resolve(s);const sn=getNode(sa);if(!sn){out.push(`mv: cannot stat '${s}': No such file or directory`);return}
+   let target=dst;if(dn&&dn.t==='d')target=dst+'/'+sa.split('/').pop();const {dir:d,name}=split(target);if(!d){out.push(`mv: cannot move '${s}': No such directory`);return}
+   const sp=split(sa);delete sp.dir.c[sp.name];d.c[name]=sn});return out.join('\n')},
+ rm:a=>{const fl=a.filter(x=>x[0]==='-').join('');const r=/[rR]/.test(fl),f=fl.includes('f');const out=[];
+  const ar=a.filter(x=>x[0]!=='-');if(!ar.length)return 'rm: missing operand';
+  ar.forEach(x=>{const abs=resolve(x);if(abs==='/'||abs===HOME||abs==='/data'){out.push(`rm: it is dangerous to operate recursively on '${x}' — refused by the sandbox`);return}const n=getNode(abs);
+   if(!n){if(!f)out.push(`rm: cannot remove '${x}': No such file or directory`);return}
+   if(n.t==='d'&&!r){out.push(`rm: cannot remove '${x}': Is a directory`);return}
+   const sp=split(abs);delete sp.dir.c[sp.name];if(S.repos[abs])delete S.repos[abs]});return out.join('\n')},
+ chmod:a=>{const ar=a.filter(x=>x[0]!=='-');if(ar.length<2)return 'chmod: missing operand';const mode=ar[0];const out=[];
+  ar.slice(1).forEach(x=>{const n=getNode(resolve(x));if(!n){out.push(`chmod: cannot access '${x}': No such file or directory`);return}
+   if(/^[0-7]{3}$/.test(mode))n.m=[...mode].map(d=>((d&4)?'r':'-')+((d&2)?'w':'-')+((d&1)?'x':'-')).join('');
+   else if(/^[ugoa]*\+x$/.test(mode)){n.m=n.m.slice(0,2)+'x'+n.m.slice(3,5)+'x'+n.m.slice(6,8)+'x'}
+   else if(/^[ugoa]*-x$/.test(mode)){n.m=n.m.slice(0,2)+'-'+n.m.slice(3,5)+'-'+n.m.slice(6,8)+'-'}
+   else out.push(`chmod: invalid mode: '${mode}'`)});return out.join('\n')},
+ tar:a=>{const fl=a[0]||'';const ar=a.filter(x=>x[0]!=='-'||false);
+  if(fl.includes('c')){const i=a.findIndex(x=>/\.(tar|tgz|gz)$/.test(x)||x.endsWith('.tar.gz'));if(i<0)return 'tar: Cowardly refusing to create an empty archive';const out=a[i];const srcs=a.slice(i+1);for(const s of srcs)if(!getNode(resolve(s)))return `tar: ${s}: Cannot stat: No such file or directory`;const r=writeFile(resolve(out),'[tar.gz archive of '+srcs.join(' ')+']',false);return r?`tar: ${out}: Cannot open: ${r}`:''}
+  if(fl.includes('x')){return M('w','(extracted — simulated)')}
+  return 'tar: You must specify one of the -Acdtrux options (e.g. tar -czf backup.tar.gz folder/)'},
+ nano:async a=>{if(!a.length)return openEditor(resolve('untitled.txt'),'New Buffer');const abs=resolve(a[0]);const n=getNode(abs);if(n&&n.t==='d')return `nano: ${a[0]} is a directory`;const sp=split(abs);if(!sp.dir)return `nano: cannot open ${a[0]}: No such directory`;return openEditor(abs,a[0])},
+ vim:async a=>{if(!S.pkgs.has('vim'))return null;return C.nano(a)},
+ ip:a=>{if(a[0]==='addr'||a[0]==='a'||!a.length)return `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n    inet 192.168.1.42/24 brd 192.168.1.255 scope global wlan0`;return 'Usage: ip addr';},
+ ifconfig:()=>`lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\n        inet 127.0.0.1  netmask 255.0.0.0\nwlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n        inet 192.168.1.42  netmask 255.255.255.0  broadcast 192.168.1.255\n        RX packets 184220  bytes 201334512 (192.0 MiB)\n        TX packets 91233  bytes 14422113 (13.7 MiB)`,
+ ping:async a=>{const h=a.find(x=>x[0]!=='-');if(!h)return 'ping: usage error: Destination address required';let n=4;const ci=a.indexOf('-c');if(ci>=0)n=Math.min(+a[ci+1]||4,6);const ip=/localhost/.test(h)?'127.0.0.1':/^\d/.test(h)?h:'142.250.80.46';
+  const l=[`PING ${h} (${ip}) 56(84) bytes of data.`];for(let i=0;i<n;i++)l.push(`64 bytes from ${ip}: icmp_seq=${i+1} ttl=117 time=${(11+Math.random()*4).toFixed(1)} ms`);l.push(`\n--- ${h} ping statistics ---\n${n} packets transmitted, ${n} received, 0% packet loss`);return slow(l)},
+ curl:a=>{const u=a.find(x=>x[0]!=='-');if(!u)return 'curl: try \'curl --help\' for more information';if(a.includes('-I'))return `HTTP/2 200\ncontent-type: text/html; charset=UTF-8\nserver: simulated\n`+M('w','(simulated headers)');if(/ifconfig\.me|icanhazip/.test(u))return '203.0.113.42';return `<!doctype html><title>${esc(u)}</title>\n`+M('w','(simulated response — the sandbox has no real network access)')},
+ wget:a=>{const u=a.find(x=>x[0]!=='-');if(!u)return 'wget: missing URL';const nm=u.split('/').pop()||'index.html';writeFile(resolve(nm),'(downloaded in sim)\n');return slow([`--${new Date().toTimeString().slice(0,8)}--  ${u}`,'Connecting... connected.','HTTP request sent, awaiting response... 200 OK',`Saving to: '${nm}'`,`${nm}      100%[===================>]   1.2K  --.-KB/s    in 0s`,M('w','(simulated download)')])},
+ passwd:()=>{S.passwd=true;return 'New password: ******** (hidden in sim)\nRetype new password: ********\nNew password was successfully set.'},
+ sshd:()=>{if(S.sshd)return 'sshd: already running on port 8022';S.sshd=true;return M('w','sshd started on port 8022. Connect from a PC with:  ssh -p 8022 '+S.env.USER+'@192.168.1.42')},
+ 'ssh-keygen':a=>{
+  const ti=a.indexOf('-t');const type=ti>=0?a[ti+1]:'rsa';const nm='id_'+type;const out=[];
+  mkdirp(HOME+'/.ssh');const sd=getNode(HOME+'/.ssh');sd.m='rwx------';
+  if(sd.c[nm])return `${HOME}/.ssh/${nm} already exists.\nOverwrite (y/n)? n`;
+  const fp='SHA256:'+btoa(hex(24)).slice(0,43);
+  sd.c[nm]=file('-----BEGIN OPENSSH PRIVATE KEY-----\n'+btoa(hex(120)).replace(/(.{70})/g,'$1\n')+'\n-----END OPENSSH PRIVATE KEY-----\n','rw-r--r--');
+  sd.c[nm+'.pub']=file(`ssh-${type==='ed25519'?'ed25519':'rsa'} AAAA${btoa(hex(40))} ${S.env.USER}@localhost\n`,'rw-r--r--');
+  return `Generating public/private ${type} key pair.\nEnter file in which to save the key (${HOME}/.ssh/${nm}): [default]\nEnter passphrase (empty for no passphrase): [hidden — use one on real keys!]\nYour identification has been saved in ${HOME}/.ssh/${nm}\nYour public key has been saved in ${HOME}/.ssh/${nm}.pub\nThe key fingerprint is:\n${fp} ${S.env.USER}@localhost\n`+M('w','Note: the private key is currently world-readable (rw-r--r--) in this sim. Fix it with chmod 600 — see Module 12.')},
+ ssh:a=>{const t=a.find(x=>x[0]!=='-'&&!/^\d+$/.test(x));if(!t)return 'usage: ssh [-p port] [user@]hostname';return slow([`The authenticity of host '${t.split('@').pop()}' can't be established.`,'ED25519 key fingerprint is SHA256:'+btoa(hex(24)).slice(0,43)+'.','Are you sure you want to continue connecting (yes/no)? yes',"Warning: Permanently added to the list of known hosts.",M('w','(simulation ends here — a real session would prompt for your password or use your key)')])},
+ scp:()=>M('w','(simulated) usage: scp -P 8022 file user@host:/path'),
+ git:a=>git(a),
+ pkg:a=>pkgCmd('pkg',a), apt:a=>pkgCmd('apt',a), 'apt-get':a=>pkgCmd('apt-get',a), dpkg:a=>a.includes('-l')?pkgCmd('pkg',['list-installed']):'dpkg: use -l',
+ python:a=>pyRun(a), python3:a=>pyRun(a),
+ pip:a=>{if(a[0]==='--version')return 'pip 24.3.1 from '+PREFIX+'/lib/python3.12/site-packages/pip (python 3.12)';if(a[0]==='install'){const p=a.slice(1).filter(x=>x[0]!=='-');if(!p.length)return 'ERROR: You must give at least one requirement to install';return slow(p.flatMap(x=>[`Collecting ${x}`,`  Downloading ${x}-1.0.0-py3-none-any.whl (64 kB)`,`Installing collected packages: ${x}`,`Successfully installed ${x}-1.0.0`]).concat([M('w','(Some packages with native code, e.g. numpy, need: pkg install python-numpy)')]))}if(a[0]==='list')return 'Package    Version\n---------- -------\npip        24.3.1\nsetuptools 75.6.0';return 'Usage: pip <command> [options]  (install, list, uninstall)'},
+ node:a=>{if(a[0]==='-v'||a[0]==='--version')return 'v22.12.0';if(a[0]==='-e'){return runScript(a[1]||'','js')}const n=getNode(resolve(a[0]||''));if(!a[0])return M('w','Welcome to Node.js v22.12.0. (REPL not simulated — try: node -e "console.log(2+3)")');if(!n||n.t!=='f')return `node:internal/modules/cjs/loader\nError: Cannot find module '${resolve(a[0])}'`;return runScript(n.d,'js')},
+ npm:a=>a[0]==='-v'||a[0]==='--version'?'10.9.2':a[0]==='init'?'(creates package.json — simulated)':a[0]==='install'||a[0]==='i'?'added 1 package, and audited 2 packages in 2s\nfound 0 vulnerabilities':'Usage: npm <command>',
+ clang:a=>cc(a),gcc:a=>cc(a),cc:a=>cc(a),
+ make:a=>{const mk=getNode(resolve('Makefile'))||getNode(resolve('makefile'));if(!mk)return 'make: *** No targets specified and no makefile found.  Stop.';
+  const lines=mk.d.split('\n');const out=[];let tgt=a[0]||null;let cur=null;let first=null;const rules={};
+  lines.forEach(l=>{const m=l.match(/^([\w.-]+):/);if(m){cur=m[1];rules[cur]=[];if(!first)first=cur}else if(cur&&/^\t/.test(l))rules[cur].push(l.trim())});
+  tgt=tgt||first;if(!rules[tgt])return `make: *** No rule to make target '${tgt}'.  Stop.`;
+  rules[tgt].forEach(c=>{out.push(c.replace(/^@/,''));if(/^(clang|gcc|cc)\b/.test(c.replace(/^@/,''))){const r=cc(c.replace(/^@/,'').split(/\s+/).slice(1));if(r)out.push(r)}});return out.join('\n')},
+ nmap:a=>nmapOut(a),
+ openssl:a=>a[0]==='rand'?(a.includes('-hex')?hex(32):'(random bytes)'):a[0]==='version'?'OpenSSL 3.4.0 22 Oct 2024':'usage: openssl rand -hex 16 | version',
+ jq:()=>M('w','(jq simulated)'),
+ figlet:a=>'  _____ _____ ____  __  __ _   ___  __\n |_   _| ____|  _ \\|  \\/  | | | \\ \\/ /\n   | | |  _| | |_) | |\\/| | | | |\\  / \n   | | | |___|  _ <| |  | | |_| |/  \\ \n   |_| |_____|_| \\_\\_|  |_|\\___//_/\\_\\',
+ cowsay:a=>{const t=a.join(' ')||'moo';return ` ${'_'.repeat(t.length+2)}\n< ${t} >\n ${'-'.repeat(t.length+2)}\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||`},
+ tmux:()=>M('w','(tmux would take over the screen — simulated: use Ctrl+B then D to detach on a real device)'),
+ zsh:()=>M('w','(zsh would start — in this sim your shell stays bash)'),
+ proot:()=>M('w','(simulated)'),
+};
+function cc(a){
+  const src=a.filter(x=>/\.c$/.test(x));if(!src.length)return 'clang: error: no input files';
+  const oi=a.indexOf('-o');const out=oi>=0?a[oi+1]:'a.out';
+  const n=getNode(resolve(src[0]));if(!n)return `clang: error: no such file or directory: '${src[0]}'`;
+  if(!/\bmain\s*\(/.test(n.d))return `ld: error: undefined symbol: main`;
+  if(!/#include/.test(n.d)&&/printf/.test(n.d))return `${src[0]}:2:5: error: call to undeclared library function 'printf'\n  hint: add  #include <stdio.h>`;
+  const f=file(n.d,'rwxr-xr-x');f.x='c';f.d=cOutput(n.d);writeFile(resolve(out),f.d);const nn=getNode(resolve(out));nn.m='rwxr-xr-x';nn.x='c';return '';
+}
+function pyRun(a){
+  if(a[0]==='--version'||a[0]==='-V')return 'Python 3.12.8';
+  if(a[0]==='-c')return runScript(a[1]||'','py');
+  if(!a[0])return M('w','Python 3.12.8 (REPL not simulated). Try:  python -c "print(2+3)"   or run a script: python hello.py');
+  const n=getNode(resolve(a[0]));if(!n)return `python: can't open file '${resolve(a[0])}': [Errno 2] No such file or directory`;
+  return runScript(n.d,'py');
+}
+
+/* ================= executor ================= */
+const evListeners=[];
+async function runLine(line){
+  const tk=tokenize(line);
+  if(tk.err){print('bash: '+tk.err,'err');return}
+  const toks=[];tk.toks.forEach(t=>{if(t.op)toks.push(t);else expandTok(t).forEach(v=>toks.push({v}))});
+  // split into command lists by ; && ||
+  const lists=[];let cur=[],joiner=';';
+  const flush=()=>{if(cur.length)lists.push({toks:cur,joiner});cur=[]};
+  for(const t of toks){ if(t.op===';'||t.op==='&&'||t.op==='||'){flush();joiner=t.op}else cur.push(t) }
+  flush();
+  let ok=true;
+  for(let li=0;li<lists.length;li++){
+    const L=lists[li];
+    if(L.joiner==='&&'&&!ok)continue;
+    if(L.joiner==='||'&&ok)continue;
+    ok=await runPipeline(L.toks);
+  }
+}
+async function runPipeline(toks){
+  const segs=[[]];toks.forEach(t=>{if(t.op==='|')segs.push([]);else segs[segs.length-1].push(t)});
+  let stdin='',ok=true;
+  for(let i=0;i<segs.length;i++){
+    let seg=segs[i],redir=null;
+    const ri=seg.findIndex(t=>t.op==='>'||t.op==='>>');
+    if(ri>=0){redir={op:seg[ri].op,f:seg[ri+1]&&seg[ri+1].v};seg=seg.slice(0,ri)}
+    let argv=seg.map(t=>t.v);
+    if(!argv.length)continue;
+    const argv0=argv[0];if(S.alias[argv[0]]){const at=tokenize(S.alias[argv[0]]);if(at.toks)argv=at.toks.filter(t=>!t.op).map(t=>t.v).concat(argv.slice(1))}
+    const name=argv[0],args=argv.slice(1);
+    let res;const last=i===segs.length-1;S.piping=!last;const origName=argv0;
+    try{ res=await exec(name,args,stdin) }catch(e){res='bash: internal error: '+e.message}
+    let streamed=false;
+    if(res&&typeof res==='object'&&res.__slow){
+      if(last&&!redir){ for(const l of res.__slow){print(l);await sleep(85)} streamed=true; res=res.__slow.join('\n') }
+      else res=res.__slow.join('\n');
+    }
+    if(res===null){ print(`bash: ${name}: command not found`,'err'); ok=false; fire(name,args,'',false); stdin=''; continue }
+    if(res&&typeof res==='object'&&res.nf){ print(res.nf,'err'); ok=false; fire(name,args,'',false); stdin=''; continue }
+    res=res||'';
+    const bad=/^(bash: |[\w.-]+: (cannot|missing|invalid|failed|No such|fatal)|fatal:|E: |ls: |cat: |rm: |cp: |mv: |mkdir: |python: |grep: |clang: |ld: |make: \*\*\*|nano: |tar: |chmod: |touch: |rmdir: |find: |head: |tail: |wc: |ping: |pip.*ERROR|ERROR:|usage:|git: )/i.test(strip(res).trim());
+    if(bad)ok=false;
+    if(redir){
+      if(!redir.f){print('bash: syntax error near unexpected token `newline\'','err');return false}
+      const wr=writeFile(resolve(redir.f),strip(res).replace(/\u0000$/,'')+(res.endsWith('\u0000')?'':'\n'),redir.op==='>>');
+      if(wr){print(`bash: ${redir.f}: ${wr}`,'err');ok=false}
+      res='';
+    }
+    if(last){ if(!streamed&&res!==''){ const nonl=res.endsWith('\u0000'); const txt=nonl?res.slice(0,-1):res; strip(txt).length||txt.length?print(txt,bad?'err':''):0 } }
+    else stdin=strip(res).replace(/\u0000$/,'');
+    S.piping=false;fire(origName,args,strip(res),!bad,line_of(toks));
+  }
+  return ok;
+}
+function line_of(toks){return toks.map(t=>t.op||t.v).join(' ')}
+async function exec(name,args,stdin){
+  if(name.startsWith('./')||name.startsWith('/')&&getNode(name)&&getNode(name).t==='f'){
+    const n=getNode(resolve(name));if(!n)return `bash: ${name}: No such file or directory`;
+    if(n.t==='d')return `bash: ${name}: Is a directory`;
+    if(!n.m.includes('x'))return `bash: ${name}: Permission denied`;
+    if(n.x==='c')return n.d;
+    return M('w','(script executed — simulator runs only compiled C demos)');
+  }
+  if(CMD2PKG[name]&&!S.pkgs.has(CMD2PKG[name])){
+    return {nf:`The program ${name} is not installed. Install it by executing:\n pkg install ${CMD2PKG[name]}`};
+  }
+  const f=C[name];
+  if(!f)return null;
+  return await f(args,stdin);
+}
+function fire(name,args,out,ok,line){evListeners.forEach(f=>f({name,args,out,ok,line,S}))}
+
+/* ================= terminal input ================= */
+function buildTerm(){
+  term.innerHTML='<div id="inrow"><span class="prompt" id="pr"></span><input id="inp" autocomplete="off" autocapitalize="off" spellcheck="false"></div>';
+  updatePrompt();
+  print('Welcome to Termux!','cb');
+  print('');
+  print('Docs:       https://termux.dev/docs','dim');
+  print('Community:  https://termux.dev/community','dim');
+  print('');
+  print('Working with packages:','dim');
+  print(' - Search:  pkg search <query>','dim');
+  print(' - Install: pkg install <package>','dim');
+  print(' - Upgrade: pkg upgrade','dim');
+  print('');
+  print('Type `help` to see what this sandbox supports. Click green commands in the lesson to paste them.','dim');
+  print('');
+  $('#inp').addEventListener('keydown',onKey);
+}
+let hIdx=0,busy=false;
+async function submit(){
+  const inp=$('#inp');const line=inp.value;inp.value='';
+  const row=document.createElement('div');row.className='ln';row.innerHTML=`<span class="prompt">${esc(prompt())}</span>${esc(line)}`;term.insertBefore(row,$('#inrow'));
+  if(!line.trim()){return}
+  S.hist.push(line);hIdx=S.hist.length;
+  busy=true;$('#inrow').style.opacity=.4;
+  try{await runLine(line)}catch(e){print('bash: '+e.message,'err')}
+  busy=false;$('#inrow').style.opacity=1;updatePrompt();term.scrollTop=term.scrollHeight;$('#inp').focus();
+}
+function complete(){
+  const inp=$('#inp');const v=inp.value;const parts=v.split(/\s+/);const w=parts[parts.length-1];
+  let cands=[];
+  if(parts.length===1){cands=[...Object.keys(C),...Object.keys(S.alias)].filter(k=>k.startsWith(w)&&(!CMD2PKG[k]||S.pkgs.has(CMD2PKG[k])))}
+  else{
+    const i=w.lastIndexOf('/');const dp=i>=0?w.slice(0,i+1):'';const pre=w.slice(i+1);
+    const d=getNode(resolve(dp||'.'));if(d&&d.t==='d')cands=Object.keys(d.c).filter(k=>k.startsWith(pre)).map(k=>dp+k+(d.c[k].t==='d'?'/':''));
+  }
+  if(cands.length===1){parts[parts.length-1]=cands[0];inp.value=parts.join(' ')+(cands[0].endsWith('/')?'':' ')}
+  else if(cands.length>1){print(prompt()+v,'dim');print(cands.map(c=>c.split('/').filter(Boolean).pop()||c).join('  '));
+    let p=cands[0];cands.forEach(c=>{while(!c.startsWith(p))p=p.slice(0,-1)});if(p.length>w.length){parts[parts.length-1]=p;inp.value=parts.join(' ')}}
+}
+function onKey(e){
+  if(busy&&!e.ctrlKey){e.preventDefault();return}
+  if(e.key==='Enter'){e.preventDefault();submit()}
+  else if(e.key==='Tab'){e.preventDefault();complete()}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(hIdx>0){hIdx--;$('#inp').value=S.hist[hIdx]||''}}
+  else if(e.key==='ArrowDown'){e.preventDefault();if(hIdx<S.hist.length){hIdx++;$('#inp').value=S.hist[hIdx]||''}}
+  else if(e.ctrlKey&&e.key==='l'){e.preventDefault();C.clear()}
+  else if(e.ctrlKey&&e.key==='c'&&!window.getSelection().toString()){e.preventDefault();print(prompt()+$('#inp').value+'^C','dim');$('#inp').value=''}
+}
+term.addEventListener('click',()=>{if(!window.getSelection().toString())$('#inp').focus()});
+$('#keys').addEventListener('click',e=>{
+  const k=e.target.dataset.k;if(!k)return;const inp=$('#inp');
+  if(k==='Tab')complete();
+  else if(k==='ArrowUp')onKey({key:'ArrowUp',preventDefault(){}});
+  else if(k==='ArrowDown')onKey({key:'ArrowDown',preventDefault(){}});
+  else if(k==='ctrl-c')onKey({ctrlKey:true,key:'c',preventDefault(){}});
+  else if(k==='ctrl-l')C.clear();
+  else if(k==='Escape'){}
+  else inp.value+=k;
+  inp.focus();
+});
+function resetSandbox(){S=newState();buildTerm();$('#inp').focus()}
+$('#rst-term').onclick=()=>{if(confirm('Reset the sandbox (files, packages, git repos)? Your task progress is kept.'))resetSandbox()};
+
+/* ================= lessons ================= */
+const cmd=t=>`<code class="cmd">${esc(t)}</code>`;
+const blk=lines=>`<pre class="blk">${lines.map(l=>l.startsWith('#')?`<span style="color:var(--mute)">${esc(l)}</span>`:`<span class="cmd">${esc(l)}</span>`).join('')}</pre>`;
+const isFile=(p)=>{const n=getNode(p);return n&&n.t==='f'};
+const has=e=>S.pkgs.has(e);
+const is=(e,n,sub)=>e.name===n&&e.ok&&(sub===undefined||e.args[0]===sub);
+const LESSONS=[
+{id:'install',icon:'1',title:'Installation',sub:'Get Termux the right way',
+ body:`<p>Termux is a terminal emulator and Linux environment for Android. No root required. It gives you a real shell, a package manager and compilers on your phone.</p>
+ <h3>Install the updated way</h3>
+ <ul><li><b>F-Droid</b> (recommended) — <code>f-droid.org</code>, search "Termux".</li><li><b>GitHub Releases</b> — <code>github.com/termux/termux-app/releases</code>. Pick the APK for your CPU (usually <code>arm64-v8a</code>).</li></ul>
+ <div class="note"><b>Avoid the Google Play build.</b> It is outdated and its package repos are no longer maintained, so installs and updates will fail. Install all Termux add-ons (Termux:API, Termux:Styling…) from the <i>same</i> source as the main app — mixing sources breaks signature checks.</div>
+ <h3>First launch</h3>
+ <p>Termux unpacks a bootstrap system (a minimal root filesystem) on first run. Your prompt looks like <code>~ $</code> — <code>~</code> is your home, <code>$</code> means a normal user.</p>
+ <h3>Where things live</h3>
+ ${blk(['$HOME   = /data/data/com.termux/files/home','$PREFIX = /data/data/com.termux/files/usr'])}
+ <p>There is no <code>/bin</code> or <code>/usr</code> like on a PC — everything is under <code>$PREFIX</code>. That is why scripts use <code>#!/data/data/com.termux/files/usr/bin/bash</code> or <code>#!/usr/bin/env bash</code>.</p>`,
+ tasks:[
+  {t:'Show information about your Termux install',h:'termux-info',c:e=>is(e,'termux-info')},
+  {t:'Print the kernel/system info',h:'uname -a',c:e=>is(e,'uname')},
+  {t:'Print where $PREFIX points',h:'echo $PREFIX',c:e=>is(e,'echo')&&e.args.join(' ').includes('/usr')},
+ ]},
+{id:'setup',icon:'2',title:'Setup & Storage',sub:'Permissions, mirrors, first update',
+ body:`<h3>Give Termux access to your files</h3>
+ <p>By default Termux can only see its own private folder. To reach photos, downloads and documents, run:</p>
+ ${blk(['termux-setup-storage'])}
+ <p>Android shows a permission prompt — tap <b>Allow</b>. Termux then creates <code>~/storage</code> with shortcuts:</p>
+ <ul><li><code>shared</code> – your internal storage root</li><li><code>downloads</code>, <code>dcim</code>, <code>pictures</code>, <code>music</code>, <code>movies</code></li></ul>
+ <h3>Pick a fast mirror</h3>
+ <p><code>termux-change-repo</code> opens a menu to choose a mirror near you — worth doing if <code>pkg update</code> feels slow or errors with "unreachable".</p>
+ <h3>Reload after config edits</h3>
+ <p>Changes to <code>~/.termux/termux.properties</code> (extra keys, bell, etc.) need <code>termux-reload-settings</code>.</p>
+ <div class="note ok"><b>Tip:</b> Press <b>Tab</b> to autocomplete commands and file names. Use ↑/↓ for history.</div>`,
+ tasks:[
+  {t:'Grant storage access',h:'termux-setup-storage',c:e=>S.storage},
+  {t:'List the storage shortcuts',h:'ls ~/storage',c:e=>is(e,'ls')&&S.storage&&e.args.join(' ').includes('storage')},
+  {t:'Go to your Downloads folder and list it',h:'cd ~/storage/downloads && ls',c:e=>is(e,'ls')&&S.cwd.endsWith('/storage/downloads')||(e.name==='ls'&&S.cwd.endsWith('/Download'))},
+  {t:'Return home',h:'cd',c:e=>S.storage&&S.cwd===HOME&&e.name==='cd'},
+ ]},
+{id:'pkg',icon:'3',title:'Package Management',sub:'pkg and apt explained',
+ body:`<p>Termux is Debian-style: software ships as <code>.deb</code> packages managed by <code>apt</code>. <code>pkg</code> is a friendly wrapper around <code>apt</code> that also picks mirrors and runs updates for you.</p>
+ ${blk(['pkg update            # refresh package lists','pkg upgrade           # upgrade everything installed','pkg install tree     # install a package','pkg search python     # find packages','pkg list-installed    # what you have','pkg show git          # details for one package','pkg uninstall tree   # remove'])}
+ <h3>pkg vs apt</h3>
+ <ul><li><code>pkg</code> — recommended for beginners; handles mirror selection, single keyword commands.</li><li><code>apt</code> — more control (<code>apt list --upgradable</code>, <code>apt policy</code>). Same underlying system, so both work.</li></ul>
+ <div class="note"><b>Habit:</b> run <code>pkg update &amp;&amp; pkg upgrade</code> before installing anything big. Skipping this causes most "package not found" and library mismatch errors. Add <code>-y</code> to auto-accept prompts.</div>`,
+ tasks:[
+  {t:'Refresh the package lists',h:'pkg update',c:e=>is(e,'pkg','update')||is(e,'apt','update')},
+  {t:'Upgrade installed packages',h:'pkg upgrade',c:e=>is(e,'pkg','upgrade')||is(e,'apt','upgrade')},
+  {t:'Search for a package',h:'pkg search python',c:e=>is(e,'pkg','search')||is(e,'apt','search')},
+  {t:'Install the tree utility',h:'pkg install tree',c:e=>has('tree')},
+  {t:'See everything installed',h:'pkg list-installed',c:e=>is(e,'pkg','list-installed')},
+ ]},
+{id:'files',icon:'4',title:'Files & Directories',sub:'The commands you will use every day',
+ body:`<h3>Navigate</h3>
+ ${blk(['pwd            # where am I?','ls -la          # list all, long format','cd folder       # enter a folder','cd ..           # up one level','cd              # back home (also: cd ~)'])}
+ <h3>Create, copy, move, delete</h3>
+ ${blk(['mkdir -p a/b/c   # make nested folders','touch file.txt    # create empty file','cp a.txt b.txt     # copy (-r for folders)','mv old new         # move or rename','rm file             # delete file','rm -r folder        # delete folder (careful!)'])}
+ <h3>Read &amp; write</h3>
+ ${blk(['echo "hi" > f.txt     # overwrite','echo "more" >> f.txt   # append','cat f.txt             # print file','head -n 5 f.txt / tail -n 5 f.txt','grep -n "hi" f.txt     # search text','find . -name "*.txt"  # find files','nano f.txt             # edit'])}
+ <p><code>|</code> pipes one command's output into another: <code>ls | wc -l</code> counts items.</p>
+ <div class="note"><b>No recycle bin.</b> <code>rm</code> is permanent. Tab-complete paths, and never run <code>rm -rf</code> with a variable you have not echoed first.</div>`,
+ tasks:[
+  {t:'Make nested folders projects/demo',h:'mkdir -p projects/demo',c:e=>getNode(HOME+'/projects/demo')},
+  {t:'Enter projects/demo',h:'cd projects/demo',c:e=>S.cwd===HOME+'/projects/demo'},
+  {t:'Create hello.txt containing text using echo and >',h:'echo "Hello Termux" > hello.txt',c:e=>isFile(HOME+'/projects/demo/hello.txt')&&getNode(HOME+'/projects/demo/hello.txt').d.trim().length>0},
+  {t:'Read it back with cat',h:'cat hello.txt',c:e=>is(e,'cat')&&e.out.includes('Hello')||(is(e,'cat')&&e.out.length>0)},
+  {t:'Copy hello.txt to copy.txt',h:'cp hello.txt copy.txt',c:e=>isFile(HOME+'/projects/demo/copy.txt')},
+  {t:'Rename copy.txt to renamed.txt',h:'mv copy.txt renamed.txt',c:e=>isFile(HOME+'/projects/demo/renamed.txt')&&!getNode(HOME+'/projects/demo/copy.txt')},
+  {t:'Delete renamed.txt',h:'rm renamed.txt',c:e=>is(e,'rm')&&!getNode(HOME+'/projects/demo/renamed.txt')},
+  {t:'Pipe: count entries with ls | wc -l',h:'ls | wc -l',c:e=>e.name==='wc'&&e.ok&&/\|/.test(e.line||'')||(e.name==='wc'&&e.ok)},
+ ]},
+{id:'git',icon:'5',title:'Git & GitHub',sub:'Version control on your phone',
+ body:`<h3>Install &amp; identify yourself</h3>
+ ${blk(['pkg install git','git config --global user.name "Your Name"','git config --global user.email "you@example.com"'])}
+ <h3>The core loop</h3>
+ ${blk(['git init              # start a repo in the current folder','git status            # what changed?','git add .             # stage changes','git commit -m "msg"   # save a snapshot','git log --oneline     # history'])}
+ <h3>GitHub</h3>
+ ${blk(['git clone https://github.com/user/repo.git','git remote add origin <url>','git push -u origin main'])}
+ <p>GitHub no longer accepts account passwords for pushes. Use a <b>Personal Access Token</b> (as the password) or an <b>SSH key</b> (Module 7). Never paste tokens into scripts you commit.</p>
+ <div class="note ok"><b>Tip:</b> add a <code>.gitignore</code> early — keep secrets, <code>node_modules/</code> and <code>__pycache__/</code> out of history.</div>`,
+ tasks:[
+  {t:'Install git',h:'pkg install git',c:e=>has('git')},
+  {t:'Set your git user.name',h:'git config --global user.name "Your Name"',c:e=>!!S.gitcfg['user.name']},
+  {t:'Set your git user.email',h:'git config --global user.email "you@example.com"',c:e=>!!S.gitcfg['user.email']},
+  {t:'Initialise a repo (inside projects/demo)',h:'cd ~/projects/demo && git init',c:e=>Object.keys(S.repos).length>0},
+  {t:'Stage everything',h:'git add .',c:e=>is(e,'git','add')},
+  {t:'Make your first commit',h:'git commit -m "first commit"',c:e=>Object.values(S.repos).some(r=>r.commits.length>0)},
+  {t:'View history',h:'git log',c:e=>is(e,'git','log')},
+ ]},
+{id:'python',icon:'6',title:'Python Setup & Dev',sub:'Scripts, pip and virtual envs',
+ body:`${blk(['pkg install python','python --version','pip --version'])}
+ <p>Write a script and run it:</p>
+ ${blk(['echo \'print("Hello from Termux")\' > hello.py','python hello.py'])}
+ <p>Or open <code>nano hello.py</code>, type code, <b>Ctrl+O</b> to save, <b>Ctrl+X</b> to exit.</p>
+ <h3>Libraries</h3>
+ ${blk(['pip install requests','python -m venv venv      # isolated environment','source venv/bin/activate'])}
+ <div class="note"><b>Heavy packages:</b> <code>numpy</code>, <code>scipy</code>, <code>pandas</code> compile slowly via pip. Prefer Termux builds: <code>pkg install python-numpy</code>. Don't run <code>pip install --upgrade pip</code> — Termux manages pip itself and it can break.</div>
+ <p><i>Sim note:</i> the sandbox's Python runner understands <code>print()</code>, variables, f-strings and simple math — enough to see scripts run.</p>`,
+ tasks:[
+  {t:'Install Python',h:'pkg install python',c:e=>has('python')},
+  {t:'Check the version',h:'python --version',c:e=>is(e,'python')&&/Python 3/.test(e.out)},
+  {t:'Create hello.py (echo, or nano)',h:'echo \'print("Hello from Termux")\' > hello.py',c:e=>{let f=false;walk(HOME,(rel,n)=>{if(n.t==='f'&&rel.endsWith('hello.py'))f=true});return f}},
+  {t:'Run your script',h:'python hello.py',c:e=>is(e,'python')&&/Hello/.test(e.out)},
+  {t:'Install a library with pip',h:'pip install requests',c:e=>is(e,'pip')&&/Successfully/.test(e.out)},
+ ]},
+{id:'net',icon:'7',title:'SSH & Networking',sub:'Remote access, keys and diagnostics',
+ body:`${blk(['pkg install openssh net-tools'])}
+ <h3>Connect out</h3>
+ ${blk(['ssh user@server.example.com','ssh -p 2222 user@host     # custom port','scp file.txt user@host:~/'])}
+ <h3>Key-based login (do this instead of passwords)</h3>
+ ${blk(['ssh-keygen -t ed25519','ssh-copy-id user@host        # install your public key','cat ~/.ssh/id_ed25519.pub'])}
+ <h3>Turn your phone into an SSH server</h3>
+ ${blk(['passwd      # set a password','sshd         # listens on port 8022','whoami       # your username, needed to connect'])}
+ <p>From a PC on the same Wi-Fi: <code>ssh -p 8022 USER@PHONE_IP</code>. Find the IP with <code>ifconfig</code> or <code>ip addr</code>.</p>
+ <h3>Diagnostics</h3>
+ ${blk(['ping -c 4 google.com','curl -I https://example.com','curl ifconfig.me       # public IP','ifconfig / ip addr'])}`,
+ tasks:[
+  {t:'Install openssh and net-tools',h:'pkg install openssh net-tools',c:e=>has('openssh')&&has('net-tools')},
+  {t:'Generate an ed25519 key pair',h:'ssh-keygen -t ed25519',c:e=>isFile(HOME+'/.ssh/id_ed25519')},
+  {t:'Print your public key',h:'cat ~/.ssh/id_ed25519.pub',c:e=>is(e,'cat')&&e.out.includes('ssh-ed25519')},
+  {t:'Set a password and start the SSH server',h:'passwd',c:e=>S.passwd&&S.sshd},
+  {t:'Find your phone\'s IP address',h:'ifconfig',c:e=>is(e,'ifconfig')||is(e,'ip')},
+  {t:'Ping a host (4 packets)',h:'ping -c 4 google.com',c:e=>is(e,'ping')},
+ ]},
+{id:'mon',icon:'8',title:'System Monitoring',sub:'CPU, memory, storage, processes',
+ body:`${blk(['top          # live process list (q to quit)','htop         # nicer, needs: pkg install htop','free -h       # memory','df -h         # disk space','uptime        # load averages','ps            # your processes','neofetch      # pretty summary (pkg install neofetch)','termux-battery-status   # needs termux-api'])}
+ <h3>Reading the numbers</h3>
+ <ul><li><b>Load average</b> (three numbers) = demand over 1/5/15 min. Stay below your core count.</li><li><b>free</b> column vs <b>available</b>: Linux uses spare RAM as cache, so judge by <i>available</i>.</li><li><b>Use%</b> in <code>df</code> above ~90% → clear space (<code>pkg clean</code>, <code>du -sh *</code>).</li></ul>
+ <div class="note">Android can kill background Termux sessions. Pull down the notification and tap <b>Acquire wakelock</b> (or run <code>termux-wake-lock</code>) for long jobs, and exempt Termux from battery optimisation.</div>`,
+ tasks:[
+  {t:'Show running processes with top',h:'top',c:e=>is(e,'top')},
+  {t:'Check memory in human units',h:'free -h',c:e=>is(e,'free')},
+  {t:'Check disk space',h:'df -h',c:e=>is(e,'df')},
+  {t:'Check uptime & load',h:'uptime',c:e=>is(e,'uptime')},
+  {t:'List your processes',h:'ps',c:e=>is(e,'ps')},
+  {t:'Install and run htop',h:'pkg install htop && htop',c:e=>is(e,'htop')},
+ ]},
+{id:'dev',icon:'9',title:'Development Tools',sub:'Node.js, C, Clang and Make',
+ body:`${blk(['pkg install nodejs clang make'])}
+ <h3>Node.js</h3>
+ ${blk(['node -v','node -e "console.log(2+3)"','echo \'console.log("hi from node")\' > app.js','node app.js','npm install express'])}
+ <h3>C with Clang</h3>
+ <p>Create <code>hello.c</code> (use <code>nano hello.c</code>):</p>
+ <pre class="blk">#include &lt;stdio.h&gt;
+int main(void){
+    printf("Hello, C!\\n");
+    return 0;
+}</pre>
+ ${blk(['clang hello.c -o hello','./hello'])}
+ <p><code>gcc</code> is simply an alias for clang in Termux. <code>./hello</code> works because the file is executable (<code>chmod +x</code> is automatic for compiler output).</p>
+ <h3>Make</h3>
+ <p>A <code>Makefile</code> automates builds. Recipe lines <b>must start with a TAB</b>.</p>
+ <pre class="blk">all:
+	clang hello.c -o hello</pre>
+ <p>Run with <code>make</code>. Also available: <code>cmake</code>, <code>golang</code>, <code>rust</code>, <code>ruby</code>.</p>`,
+ tasks:[
+  {t:'Install nodejs, clang and make',h:'pkg install nodejs clang make',c:e=>has('nodejs')&&has('clang')&&has('make')},
+  {t:'Check the Node version',h:'node -v',c:e=>is(e,'node')&&/^v\d/.test(e.out)},
+  {t:'Write hello.c with nano (or echo)',h:'nano hello.c',c:e=>{let f=false;walk(HOME,(rel,n)=>{if(n.t==='f'&&rel.endsWith('hello.c')&&/main/.test(n.d))f=true});return f}},
+  {t:'Compile it',h:'clang hello.c -o hello',c:e=>{let f=false;walk(HOME,(rel,n)=>{if(n.t==='f'&&n.x==='c')f=true});return f}},
+  {t:'Run the program',h:'./hello',c:e=>e.name.startsWith('./')&&e.ok&&e.out.length>0},
+ ]},
+{id:'sec',icon:'10',title:'Ethical Security Tools',sub:'Educational use only — know the rules',
+ body:`<div class="note"><b>Rules first.</b> Only test systems <b>you own</b> or have <b>explicit written permission</b> to test. Unauthorised scanning or access is illegal in most countries (e.g. CFAA, Computer Misuse Act) regardless of intent. This module is defensive: learn what attackers can see so you can close it.</div>
+ <h3>Know your own exposure with nmap</h3>
+ ${blk(['pkg install nmap','nmap localhost          # what is listening on this device?','nmap -sV localhost       # + service versions','nmap 192.168.1.1         # your own router (only if yours)'])}
+ <p>An open port is a running service. If you don't need it, stop it. If you do, protect it (keys, firewall, updates).</p>
+ <h3>Defender habits</h3>
+ <ul><li>Scan yourself after starting a service (<code>sshd</code> → port <b>8022</b>) to confirm what is exposed.</li><li>Practise legally: your own home lab, <code>scanme.nmap.org</code> (within its rules), or deliberately vulnerable VMs like DVWA / HackTheBox / TryHackMe.</li><li>Generate strong secrets: <code>openssl rand -hex 16</code> (<code>pkg install openssl-tool</code>).</li><li>Check passwords you reuse at <i>haveibeenpwned.com</i>.</li></ul>
+ <p><i>Sim note:</i> the sandbox only "scans" <code>localhost</code> or <code>192.168.x.x</code>; other targets are refused on purpose.</p>`,
+ tasks:[
+  {t:'Install nmap',h:'pkg install nmap',c:e=>has('nmap')},
+  {t:'Scan your own device',h:'nmap localhost',c:e=>is(e,'nmap')&&/localhost|127/.test(e.args.join(' '))},
+  {t:'Start sshd, then scan again and spot port 8022',h:'sshd && nmap localhost',c:e=>is(e,'nmap')&&S.sshd&&/8022/.test(e.out)},
+  {t:'Generate a strong random secret (install openssl-tool first)',h:'pkg install openssl-tool && openssl rand -hex 16',c:e=>is(e,'openssl')&&e.args[0]==='rand'},
+ ]},
+{id:'custom',icon:'11',title:'Customization & Productivity',sub:'Aliases, .bashrc, extra keys, themes',
+ body:`<h3>Shell startup: ~/.bashrc</h3>
+ <p>Runs on every new session — put aliases and exports here:</p>
+ ${blk(['echo "alias ll=\'ls -la\'" >> ~/.bashrc','echo "alias update=\'pkg update && pkg upgrade -y\'" >> ~/.bashrc','source ~/.bashrc      # apply now'])}
+ <h3>Extra keys row &amp; behaviour</h3>
+ <p><code>mkdir -p ~/.termux</code> then edit <code>~/.termux/termux.properties</code>:</p>
+ <pre class="blk">extra-keys = [['ESC','TAB','CTRL','ALT','-','/','|','UP'], \\
+              ['~','HOME','END','PGUP','PGDN','LEFT','DOWN','RIGHT']]</pre>
+ <p>Apply with <code>termux-reload-settings</code>. Long-press the screen → <b>Style</b> for colours/fonts, or install <b>Termux:Styling</b>.</p>
+ <h3>Nice-to-haves</h3>
+ <ul><li><code>neofetch</code> / <code>fastfetch</code> – system banner</li><li><code>tmux</code> – split panes, persistent sessions</li><li><code>zsh</code> + oh-my-zsh – richer prompt</li><li><code>termux-api</code> – scripts that use battery, clipboard, SMS, camera (with permissions)</li><li>Edit <code>$PREFIX/etc/motd</code> to change the welcome text.</li></ul>`,
+ tasks:[
+  {t:'Add an alias to ~/.bashrc',h:'echo "alias ll=\'ls -la\'" >> ~/.bashrc',c:e=>{const n=getNode(HOME+'/.bashrc');return n&&/alias/.test(n.d)}},
+  {t:'Apply it with source',h:'source ~/.bashrc',c:e=>is(e,'source')&&Object.keys(S.alias).length>0},
+  {t:'Use your new alias',h:'ll',c:e=>Object.keys(S.alias).includes(e.name)&&e.ok},
+  {t:'Create the ~/.termux config folder',h:'mkdir -p ~/.termux',c:e=>getNode(HOME+'/.termux')},
+  {t:'Install and run neofetch',h:'pkg install neofetch && neofetch',c:e=>is(e,'neofetch')},
+ ]},
+{id:'best',icon:'12',title:'Pro Practices & Security',sub:'Habits that keep your setup safe and stable',
+ body:`<h3>Security</h3>
+ <ul><li><b>Read before you run.</b> Never pipe unknown scripts into a shell (<code>curl … | bash</code>). Download, <code>cat</code> it, then run.</li><li><b>Lock down secrets:</b> <code>chmod 600 ~/.ssh/id_ed25519</code> — private keys must be readable only by you. <code>ls -l</code> to verify.</li><li><b>Keys over passwords</b> for SSH; disable password login once keys work.</li><li><b>Keep updated:</b> <code>pkg update &amp;&amp; pkg upgrade</code> weekly.</li><li>Only install from official repos / F-Droid. Be wary of "hacking tool" repos — many are malware.</li><li>Don't store tokens in shell history; use environment files with 600 permissions.</li></ul>
+ <h3>Stability &amp; backup</h3>
+ ${blk(['tar -czf ~/backup.tar.gz projects      # archive your work','cp ~/backup.tar.gz ~/storage/shared/     # copy off-app (needs storage setup)','termux-wake-lock                       # keep long jobs alive','history | grep pkg                     # recall commands'])}
+ <ul><li>Uninstalling Termux or "Clear data" <b>erases</b> everything in <code>$HOME</code> — back up first.</li><li>Use <code>git</code> for code, <code>tar</code> for snapshots.</li><li>Avoid <code>rm -rf</code> with wildcards; prefer <code>rm -ri</code> when unsure.</li><li>Prefer <code>$PREFIX</code> and relative paths in scripts so they stay portable.</li></ul>
+ <div class="note ok"><b>You've reached the end of the course.</b> Take the Quiz tab to test yourself, and keep the Reference tab handy.</div>`,
+ tasks:[
+  {t:'Lock down a private file (create one first if needed)',h:'chmod 600 ~/.ssh/id_ed25519',c:e=>is(e,'chmod')&&e.args.includes('600')},
+  {t:'Verify permissions with ls -l',h:'ls -l ~/.ssh',c:e=>is(e,'ls')&&e.args.some(a=>/^-.*l/.test(a))&&/rw-------/.test(e.out)},
+  {t:'Create a backup archive',h:'cd && tar -czf ~/backup.tar.gz projects',c:e=>is(e,'tar')&&isFile(HOME+'/backup.tar.gz')},
+  {t:'Search your command history',h:'history | grep pkg',c:e=>is(e,'grep')&&/pkg/.test(e.args.join(' '))},
+ ]},
+];
+
+/* ================= progress ================= */
+let done=store.get('termuxSim.finale.v1',{});
+const total=()=>LESSONS.reduce((a,l)=>a+l.tasks.length,0);
+const doneCount=()=>Object.keys(done).length;
+let cur=store.get('termuxSim.finale.cur',0);
+function saveProg(){store.set('termuxSim.finale.v1',done)}
+function modDone(i){return LESSONS[i].tasks.every((_,j)=>done[i+'.'+j])}
+evListeners.push(ev=>{
+  let changed=false;const wasDone=modDone(cur);
+  LESSONS.forEach((l,i)=>l.tasks.forEach((t,j)=>{
+    const k=i+'.'+j;if(done[k])return;
+    try{if(t.c(ev)){done[k]=1;changed=true}}catch(e){}
+  }));
+  if(changed){saveProg();renderTasks();renderSide();updateProg();if(!wasDone&&modDone(cur))print(M('g','✔ Module complete: '+LESSONS[cur].title)+' — open the next lesson when ready.')}
+});
+function updateProg(){const d=doneCount(),t=total();$('#ptxt').textContent=`${d} / ${t} tasks`;$('#pbar').style.width=(100*d/t)+'%'}
+
+/* ================= render: training ================= */
+function renderSide(){
+  $('#side').innerHTML=LESSONS.map((l,i)=>`<button class="mod ${i===cur?'on':''} ${modDone(i)?'done':''}" data-i="${i}"><span class="n">${modDone(i)?'✓':l.icon}</span><div><b>${esc(l.title)}</b><span class="s">${esc(l.sub)}</span></div></button>`).join('');
+}
+function renderTasks(){
+  const l=LESSONS[cur];const el=$('#tasks');if(!el)return;
+  el.innerHTML=`<b>Your tasks</b> <span style="color:var(--mute)">(${l.tasks.filter((_,j)=>done[cur+'.'+j]).length}/${l.tasks.length})</span>`+l.tasks.map((t,j)=>`<div class="task ${done[cur+'.'+j]?'done':''}"><div class="ck">${done[cur+'.'+j]?'✓':''}</div><div style="flex:1"><div class="tx">${esc(t.t)}</div><div class="hint" id="h${j}">${esc(t.h)}</div></div><button class="ghost hintb" data-h="${j}">hint</button></div>`).join('');
+  $('#next').disabled=cur>=LESSONS.length-1;
+}
+function renderLesson(){
+  const l=LESSONS[cur];
+  $('#lesson').innerHTML=`<div style="color:var(--mute);font-size:12px;font-family:var(--mono)">MODULE ${cur+1} OF ${LESSONS.length}</div><h2>${esc(l.title)}</h2><p class="sub">${esc(l.sub)}</p>${l.body}<div class="tasks" id="tasks"></div><div class="pager"><button class="btn sec" id="prev" ${cur===0?'disabled':''}>← Previous</button><button class="btn" id="next">Next module →</button></div>`;
+  $('#lesson').scrollTop=0;renderTasks();renderSide();
+  $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
+}
+function go(i){cur=Math.max(0,Math.min(LESSONS.length-1,i));store.set('termuxSim.finale.cur',cur);renderLesson()}
+$('#side').addEventListener('click',e=>{const b=e.target.closest('.mod');if(b)go(+b.dataset.i)});
+$('#lesson').addEventListener('click',e=>{
+  const c=e.target.closest('.cmd');
+  if(c){const inp=$('#inp');if(inp&&!busy){inp.value=c.textContent.replace(/\s+#.*$/,'');inp.focus()}return}
+  const h=e.target.closest('[data-h]');if(h){$('#h'+h.dataset.h).classList.toggle('show')}
+});
+$('#reset').onclick=()=>{if(confirm('Reset ALL task progress and quiz scores?')){done={};saveProg();store.set('termuxSim.finale.quiz',null);go(0);updateProg();renderQuiz()}};
+
+/* ================= reference ================= */
+const REF=[
+['Navigation & files',[['pwd','Print working directory'],['ls -la','List all files, long format'],['cd ~ / cd ..','Go home / up one level'],['mkdir -p a/b','Create nested directories'],['touch f','Create empty file / update time'],['cp -r src dst','Copy files or folders'],['mv a b','Move or rename'],['rm -r dir','Delete recursively (permanent)'],['cat / less f','Print / page a file'],['head -n 5 / tail -n 5 f','First / last lines'],['grep -rn "text" .','Search recursively with line numbers'],['find . -name "*.py"','Find files by name'],['tree','Show directory tree (pkg install tree)'],['chmod 600 f / +x f','Change permissions'],['tar -czf a.tar.gz dir','Create compressed archive'],['du -sh *','Size of each item']]],
+['Packages',[['pkg update && pkg upgrade','Refresh and upgrade everything'],['pkg install <name>','Install'],['pkg uninstall <name>','Remove'],['pkg search <kw>','Search'],['pkg list-installed','Installed packages'],['pkg show <name>','Package details'],['pkg clean','Clear cached .deb files'],['termux-change-repo','Choose a mirror']]],
+['Termux specific',[['termux-setup-storage','Access shared storage'],['termux-reload-settings','Apply termux.properties'],['termux-wake-lock','Prevent CPU sleep'],['termux-info','Environment & version info'],['termux-open-url <url>','Open URL in Android (termux-tools)'],['termux-battery-status','Battery JSON (termux-api)'],['termux-clipboard-get/set','Clipboard (termux-api)'],['$PREFIX / $HOME','Key directories']]],
+['Git',[['git init','New repo'],['git clone <url>','Copy a repo'],['git status','Working tree state'],['git add .','Stage all'],['git commit -m "msg"','Commit'],['git log --oneline','Compact history'],['git branch / checkout -b x','Branches'],['git remote add origin <url>','Add remote'],['git push -u origin main','Upload'],['git pull','Download & merge'],['git diff','Unstaged changes']]],
+['Python & Dev',[['python script.py','Run a script'],['python -m venv venv','Create virtual env'],['pip install <pkg>','Install Python lib'],['node file.js','Run Node.js'],['npm install <pkg>','Install Node module'],['clang a.c -o a','Compile C'],['make','Run Makefile'],['cmake .. && make','CMake build']]],
+['SSH & Network',[['ssh user@host','Connect'],['ssh -p 8022 user@ip','Custom port (Termux sshd)'],['ssh-keygen -t ed25519','Create key pair'],['ssh-copy-id user@host','Install key on server'],['scp f user@host:~/','Copy over SSH'],['sshd','Start SSH server (port 8022)'],['passwd','Set Termux password'],['ifconfig / ip addr','IP addresses'],['ping -c 4 host','Reachability'],['curl -I url','HTTP headers'],['curl -O url / wget url','Download'],['nmap localhost','Scan your own device (pkg install nmap)']]],
+['System monitoring',[['top / htop','Live processes'],['free -h','Memory'],['df -h','Disk usage'],['uptime','Load average'],['ps aux','All processes'],['kill <pid> / pkill name','Stop a process'],['neofetch','System summary'],['uname -a','Kernel info']]],
+['Shell productivity',[['Ctrl+C','Cancel running command'],['Ctrl+L','Clear screen'],['Ctrl+R','Reverse history search'],['Ctrl+A / Ctrl+E','Line start / end'],['Tab','Autocomplete'],['!!','Repeat last command'],['cmd1 | cmd2','Pipe output'],['cmd > f / >> f','Redirect / append'],['cmd1 && cmd2','Run 2nd only if 1st succeeds'],['alias ll="ls -la"','Shortcut'],['history | grep x','Find old commands']]],
+];
+const TIPS=[['Install from F-Droid / GitHub','The Play Store build is unmaintained. Never mix APK sources between Termux and its add-ons.'],['Update before installing','pkg update && pkg upgrade avoids most dependency errors.'],['Authorised testing only','Scan and test only systems you own or are explicitly permitted to test. Unauthorised access is a crime.'],['Protect private keys','chmod 600 ~/.ssh/id_*; use a passphrase; never commit keys or tokens.'],['Read scripts before running','Avoid curl | bash from sources you have not reviewed.'],['Back up regularly','Clearing app data wipes $HOME. Use git + tar and copy archives to shared storage or cloud.'],['Use wake-lock for long jobs','Android may kill background sessions; acquire a wakelock and disable battery optimisation for Termux.'],['Use SSH keys not passwords','Keys resist brute-force; disable PasswordAuthentication in $PREFIX/etc/ssh/sshd_config when ready.'],['Keep storage tidy','pkg clean, du -sh *, delete old venvs and node_modules.'],['Stay on 64-bit packages','Install APK matching your CPU (arm64-v8a for most devices).']];
+function renderRef(filter=''){
+  const f=filter.toLowerCase();
+  let h=`<h2>Command reference</h2><p style="color:var(--mute);margin:0">Everything in the course, searchable. Click a command to copy it.</p><input class="search" id="rsearch" placeholder="Search commands… (try: ssh, copy, memory)" value="${esc(filter)}">`;
+  REF.forEach(([cat,rows])=>{const r=rows.filter(([c,d])=>!f||c.toLowerCase().includes(f)||d.toLowerCase().includes(f)||cat.toLowerCase().includes(f));if(r.length)h+=`<div class="cat"><h3>${cat}</h3>${r.map(([c,d])=>`<div class="row"><code class="cmd" data-copy="${esc(c)}">${esc(c)}</code><span>${esc(d)}</span></div>`).join('')}</div>`});
+  if(!f)h+=`<div class="cat"><h3>Pro-level best practices & security tips</h3>${TIPS.map(([a,b])=>`<div class="row"><code style="color:var(--warn)">${esc(a)}</code><span>${esc(b)}</span></div>`).join('')}</div>`;
+  $('#refpage').innerHTML=h;const s=$('#rsearch');s.addEventListener('input',()=>{const p=s.selectionStart;renderRef(s.value);const n=$('#rsearch');n.focus();n.setSelectionRange(p,p)});
+}
+$('#refpage').addEventListener('click',e=>{const c=e.target.closest('[data-copy]');if(c){try{navigator.clipboard.writeText(c.dataset.copy)}catch(x){}c.style.outline='1px solid var(--accent)';setTimeout(()=>c.style.outline='',500)}});
+
+/* ================= quiz ================= */
+const QZ=[
+['Which source should you install Termux from?',['Google Play Store','F-Droid or GitHub Releases','Any APK site','Samsung Galaxy Store'],1,'The Play Store build is outdated and its repos are unmaintained. Use F-Droid or GitHub Releases, and keep all add-ons from the same source.'],
+['What does termux-setup-storage do?',['Formats your SD card','Creates ~/storage links to shared storage after you grant permission','Installs extra RAM','Backs up Termux'],1,'It requests Android storage permission and creates ~/storage with shortcuts such as downloads and dcim.'],
+['Which command refreshes package lists AND installs newer versions?',['pkg update only','pkg upgrade (ideally after pkg update)','pkg refresh','apt reboot'],1,'update fetches lists; upgrade installs newer versions. Run both: pkg update && pkg upgrade.'],
+['What is the relationship between pkg and apt?',['They are unrelated','pkg is a wrapper around apt','apt is a wrapper around pkg','pkg is for Python only'],1,'pkg is a Termux helper that wraps apt (and handles mirrors).'],
+['Which command creates nested folders a/b/c in one go?',['mkdir a/b/c','mkdir -p a/b/c','touch a/b/c','cd -m a/b/c'],1,'-p creates parent directories as needed.'],
+['What does echo "x" >> notes.txt do?',['Overwrites notes.txt','Appends a line to notes.txt','Deletes notes.txt','Prints x twice'],1,'>> appends; > overwrites.'],
+['What is the very first thing git needs before you can commit?',['A GitHub account','Your user.name and user.email configured','Root access','Python installed'],1,'Git records an author identity for every commit; set it with git config --global.'],
+['In what order are the core git steps?',['commit → add → init','init → add → commit','add → init → push','push → commit → add'],1,'Initialise the repo, stage changes with add, then commit.'],
+['Best way to install Python-heavy libraries like numpy in Termux?',['pip install --upgrade pip first','pkg install python-numpy (prebuilt for Termux)','Reinstall Termux','They cannot be installed'],1,'Termux ships prebuilt builds of heavy scientific packages; pip builds from source are slow and may fail. Also avoid upgrading pip itself.'],
+['What port does Termux sshd listen on by default?',['22','2222','8022','8080'],2,'Android does not let apps bind ports below 1024, so Termux uses 8022.'],
+['Which is the safer way to authenticate over SSH?',['A short password','Key pairs (ssh-keygen -t ed25519) with a passphrase','Sharing your private key','Disabling encryption'],1,'Public-key auth resists brute force. Never share the private key.'],
+['Which command shows memory in human-readable units?',['mem -h','free -h','ram --show','df -m'],1,'free -h shows total/used/available memory; df -h is for disk.'],
+['On Linux, which "memory" number best shows what apps can still use?',['free','shared','available','total'],2,'Available accounts for reclaimable cache; "free" alone looks misleadingly small.'],
+['Why does ./hello work after clang hello.c -o hello?',['Termux auto-runs files','The output is marked executable and ./ names a path in the current dir','Clang installs it system-wide','It does not work'],1,'The compiler sets the execute bit; ./ runs a file by path because the current dir is not in $PATH.'],
+['A Makefile recipe line must begin with…',['4 spaces','A TAB character','A semicolon','A # sign'],1,'Make requires a literal TAB before recipe commands.'],
+['You want to scan a network with nmap. When is it acceptable?',['Any time, if you are curious','Only systems you own or have explicit written permission to test','Only at night','Only if you use a VPN'],1,'Unauthorised scanning can be illegal. Practise on your own gear or deliberately provided targets.'],
+['What permission should a private SSH key have?',['777','644','600','000 is fine'],2,'chmod 600 → only you can read/write. SSH refuses keys that are too open.'],
+['What happens to ~ (home) if you clear Termux app data?',['Nothing','It is wiped','It moves to the SD card','It is encrypted'],1,'Everything under $HOME is deleted. Keep backups (git, tar, copies in shared storage).'],
+['Which is risky practice?',['Reading a script before running it','curl http://x/install.sh | bash from an unknown site','Updating packages weekly','Using key-based SSH'],1,'Piping unknown scripts to a shell runs unreviewed code with your permissions.'],
+['After editing ~/.termux/termux.properties, what applies the change?',['Reboot the phone','termux-reload-settings','pkg upgrade','Nothing, instant'],1,'termux-reload-settings re-reads the properties file.'],
+];
+let qs=store.get('termuxSim.finale.quiz',null)||{i:0,score:0,ans:[],best:0};
+function saveQ(){store.set('termuxSim.finale.quiz',qs)}
+function renderQuiz(){
+  const el=$('#quizpage');
+  if(qs.i>=QZ.length){
+    const pct=Math.round(100*qs.score/QZ.length);
+    el.innerHTML=`<h2>Quiz</h2><div class="card" style="text-align:center"><div class="score">${qs.score} / ${QZ.length}</div><p>${pct>=90?'Termux master! 🏆':pct>=70?'Solid grasp — review the missed topics.':'Keep practising in the Training tab, then retry.'}</p><p style="color:var(--mute)">Best score: ${Math.max(qs.best||0,qs.score)} / ${QZ.length}</p><button class="btn" id="qretry">Retry quiz</button></div>`;
+    qs.best=Math.max(qs.best||0,qs.score);saveQ();$('#qretry').onclick=()=>{qs={i:0,score:0,ans:[],best:qs.best};saveQ();renderQuiz()};return;
+  }
+  const q=QZ[qs.i];const picked=qs.ans[qs.i];
+  el.innerHTML=`<h2>Quiz</h2><p style="color:var(--mute);margin:0 0 12px">Question ${qs.i+1} of ${QZ.length} · score ${qs.score}${qs.best?` · best ${qs.best}`:''}</p><div class="card"><h3 style="margin-top:0">${esc(q[0])}</h3>${q[1].map((o,k)=>`<button class="opt ${picked!==undefined?(k===q[2]?'right':k===picked?'wrong':''):''}" data-k="${k}" ${picked!==undefined?'disabled':''}>${esc(o)}</button>`).join('')}${picked!==undefined?`<div class="expl"><b>${picked===q[2]?'Correct.':'Not quite.'}</b> ${esc(q[3])}</div><div style="margin-top:14px"><button class="btn" id="qnext">${qs.i===QZ.length-1?'See results':'Next question'}</button></div>`:''}</div>`;
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const k=+b.dataset.k;qs.ans[qs.i]=k;if(k===q[2])qs.score++;saveQ();renderQuiz()});
+  const n=$('#qnext');if(n)n.onclick=()=>{qs.i++;saveQ();renderQuiz()};
+}
+
+/* ================= about ================= */
+$('#aboutpage').innerHTML=`<h2>About Terminal Trainer</h2><p style="color:var(--mute)">An interactive simulator for learning the Linux command line on Android, using the Termux environment as the example.</p>
+<div class="card"><h3 style="margin-top:0">How it works</h3><ul><li><b>Training:</b> 12 modules, each with a lesson on the left and a live terminal sandbox on the right. Tasks tick off automatically as you run the right commands.</li><li><b>Sandbox:</b> a simulated Android/Termux filesystem in your browser. Installing packages, creating files, git repos and compiling C all work — but nothing touches your real device or network.</li><li><b>Reference:</b> searchable cheat sheet and best-practice list.</li><li><b>Quiz:</b> 20 questions with explanations.</li></ul>
+<h3>Syllabus</h3><ol>${LESSONS.map(l=>`<li>${esc(l.title)} — <span style="color:var(--mute)">${esc(l.sub)}</span></li>`).join('')}</ol>
+<div class="note"><b>Not affiliated:</b> Terminal Trainer is an independent educational app. It is not made by, endorsed by, or connected to the Termux project or its maintainers. "Termux" is referenced only to describe the software being taught.</div><div class="note"><b>Ethics:</b> The security module is educational and defensive. Only test systems you own or have written permission to test.</div>
+<p style="color:var(--mute)">Simulation limits: Python/Node runners handle print/log, variables and simple math; no real network; outputs such as versions and sizes are representative, not live. Progress is saved in your browser (localStorage).</p></div>`;
+
+/* ================= nav ================= */
+$('#nav').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.v));
+  if(b.dataset.v==='ref')renderRef();
+  if(b.dataset.v==='quiz')renderQuiz();
+  if(b.dataset.v==='train')setTimeout(()=>$('#inp')&&$('#inp').focus(),50);
+});
+
+/* ================= boot ================= */
+S=newState();buildTerm();renderLesson();updateProg();
+</script>
+
+<script>
+/* Terminal SIM episode build: Finale */
+(async function(){
+  var E = {"id": "finale", "label": "Finale", "title": "Quiz", "module": 12, "view": "quiz", "try": "", "setup": []};
+  try { document.title = 'Terminal SIM · ' + E.label + ': ' + E.title; } catch(e){}
+  var bar = document.createElement('div');
+  bar.id = 'ep-bar';
+  bar.style.cssText = 'background:#16a34a;color:#04130a;font:600 12px/1.4 system-ui,sans-serif;padding:6px 10px;text-align:center';
+  bar.innerHTML = 'Video version: <b>' + E.label + ' · ' + E.title + '</b>' +
+    (location.protocol.indexOf('http') === 0 ? ' &nbsp;·&nbsp; <a style="color:#04130a" href="../">All episodes</a>' : '');
+  document.body.insertBefore(bar, document.body.firstChild);
+  if (E.view) { var b = document.querySelector('[data-v="' + E.view + '"]'); if (b) b.click(); }
+  go(E.module - 1);
+  var t = document.getElementById('term');
+  if (E.setup.length) {
+    busy = true; t.style.visibility = 'hidden';
+    for (var i = 0; i < E.setup.length; i++) {
+      try { S.hist.push(E.setup[i]); await runLine(E.setup[i]); } catch(e) {}
+    }
+    hIdx = S.hist.length;
+    try { C.clear([]); } catch(e) {}
+    busy = false; t.style.visibility = ''; updatePrompt();
+  }
+  print(M('g', '▶ ' + E.label + ': ' + E.title + (E.setup.length ? ' (picking up where the last part left off)' : '')));
+  if (E.try) print(M('w', 'Try this first: ' + E.try));
+})();
+</script>
+</body>
+</html>
